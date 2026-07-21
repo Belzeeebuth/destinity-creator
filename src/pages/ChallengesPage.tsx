@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../state/store';
 import { getDailyChallengeConfig, decodeShareCode } from '../engine/challenges';
 import { isDailyChallengeDoneToday } from '../engine/meta';
-import { flagEmoji, getCountry } from '../data/countries';
+import { getCountry } from '../data/countries';
 import { getPosition } from '../data/positions';
+import CountryFlag from '../components/ui/CountryFlag';
 
 export default function ChallengesPage() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export default function ChallengesPage() {
         </p>
         <div className="card mt-4 flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{flagEmoji(dailyConfig.countryCode)}</span>
+            <CountryFlag code={dailyConfig.countryCode} size="lg" />
             <div>
               <div className="font-display text-lg text-ink-100">{dailyCountry.name}</div>
               <div className="text-xs text-ink-400">{dailyPosition.name}</div>

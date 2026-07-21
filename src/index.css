@@ -128,3 +128,49 @@ body {
 .animate-pop-in {
   animation: pop-in 0.25s ease both;
 }
+
+/* Halo lumineux doré appliqué à toute option sélectionnable (pays, poste, origine,
+   mode de vie, agent...) : rend la sélection immédiatement visible et gratifiante. */
+.choice-option {
+  position: relative;
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.25s ease, transform 0.18s ease;
+}
+.choice-option.is-selected {
+  animation: choice-glow-in 0.35s ease both;
+  border-color: rgba(232, 185, 74, 0.85) !important;
+  background-color: rgba(232, 185, 74, 0.1);
+  box-shadow:
+    0 0 0 2px rgba(232, 185, 74, 0.55),
+    0 0 26px 6px rgba(232, 185, 74, 0.35);
+}
+.choice-option.is-selected::after {
+  content: '✓';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1305;
+  background: #e8b94a;
+  border-radius: 999px;
+  box-shadow: 0 0 10px rgba(232, 185, 74, 0.7);
+}
+
+@keyframes choice-glow-in {
+  from {
+    box-shadow:
+      0 0 0 2px rgba(232, 185, 74, 0.8),
+      0 0 40px 14px rgba(232, 185, 74, 0.55);
+    transform: scale(1.03);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px rgba(232, 185, 74, 0.55),
+      0 0 26px 6px rgba(232, 185, 74, 0.35);
+    transform: scale(1);
+  }
+}

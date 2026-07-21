@@ -7,8 +7,10 @@ import {
   loadMeta,
   saveMeta,
   addTokens,
-  purchaseAdvantage as purchaseAdvantageMeta,
+  upgradeAdvantage as upgradeAdvantageMeta,
   setEquippedAdvantages as setEquippedMeta,
+  purchaseConsumable as purchaseConsumableMeta,
+  consumeItem,
   unlockBadges,
   addPantheonEntry,
   incrementCareersPlayed,
@@ -20,7 +22,9 @@ import {
 } from '../engine/meta';
 import { evaluateBadges, BADGES } from '../data/badges';
 import { getCountry } from '../data/countries';
-import { getAdvantage } from '../data/shop';
+import { getConsumable } from '../data/shop';
+import { adjustFitness, adjustMorale } from '../engine/util';
+import type { StatDelta } from '../engine/diff';
 
 const CAREER_STORAGE_KEY = 'destiny11_career_v1';
 
@@ -54,6 +58,8 @@ interface GameStore {
   career: PlayerState | null;
   activeEventChoices: EventChoiceOutcome[] | null;
   lastEventResult: string | null;
+  lastEventDeltas: StatDelta[];
+  lastNegotiationResult: string | null;
   meta: MetaProfile;
   careerEndSummary: CareerEndSummary | null;
 
@@ -64,28 +70,42 @@ interface GameStore {
   runSeasonSim: () => void;
   acceptOffer: (index: number) => void;
   declineOffers: () => void;
+  negotiateOffer: (index: number, aspect: CareerEngine.NegotiationAspect) => void;
   advanceSeason: () => void;
   retireNow: () => void;
   abandonCareer: () => void;
   finalizeCareerEnd: () => void;
 
-  purchaseAdvantage: (id: string) => void;
+  upgradeAdvantage: (id: string) => void;
   setEquippedAdvantages: (ids: string[]) => void;
+  purchaseConsumable: (id: string) => void;
+  activateConsumable: (id: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
   career: loadCareer(),
   activeEventChoices: null,
   lastEventResult: null,
+  lastEventDeltas: [],
+  lastNegotiationResult: null,
   meta: loadMeta(),
   careerEndSummary: null,
 
   startCareer: (input) => {
-    const career = CareerEngine.createCareer(input);
+    const meta = get().meta;
+    const career = CareerEngine.createCareer({ ...input, advantageLevels: meta.advantageLevels });
     saveCareer(career);
-    const meta = incrementCareersPlayed(get().meta);
-    saveMeta(meta);
-    set({ career, activeEventChoices: null, lastEventResult: null, careerEndSummary: null, meta });
+    const nextMeta = incrementCareersPlayed(meta);
+    saveMeta(nextMeta);
+    set({
+      career,
+      activeEventChoices: null,
+      lastEventResult: null,
+      lastEventDeltas: [],
+      lastNegotiationResult: null,
+      careerEndSummary: null,
+      meta: nextMeta,
+    });
   },
 
   chooseFocus: (attr) => {
@@ -99,17 +119,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
   pickEventChoice: (index) => {
     const { career, activeEventChoices } = get();
     if (!career || !activeEventChoices) return;
-    const resultText = CareerEngine.resolveEventChoice(career, activeEventChoices, index);
+    const { text, deltas } = CareerEngine.resolveEventChoice(career, activeEventChoices, index);
     saveCareer(career);
-    set({ career: { ...career }, activeEventChoices: null, lastEventResult: resultText });
+    set({ career: { ...career }, activeEventChoices: null, lastEventResult: text, lastEventDeltas: deltas });
   },
 
   continueAfterEvent: () => {
     const { career } = get();
     if (!career) return;
+    if (career.phase === 'mid_season') {
+      // La pause de mi-saison vient d'être résolue : place à la simulation complète.
+      career.phase = 'season_sim';
+      career.pendingEvent = null;
+      saveCareer(career);
+      set({ career: { ...career }, activeEventChoices: null, lastEventResult: null, lastEventDeltas: [] });
+      return;
+    }
     const choices = CareerEngine.drawNextEvent(career);
     saveCareer(career);
-    set({ career: { ...career }, activeEventChoices: choices, lastEventResult: null });
+    set({ career: { ...career }, activeEventChoices: choices, lastEventResult: null, lastEventDeltas: [] });
   },
 
   runSeasonSim: () => {
@@ -136,6 +164,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ career: { ...career } });
   },
 
+  negotiateOffer: (index, aspect) => {
+    const { career } = get();
+    if (!career) return;
+    const result = CareerEngine.negotiateOffer(career, index, aspect);
+    saveCareer(career);
+    set({ career: { ...career }, lastNegotiationResult: result });
+  },
+
   advanceSeason: () => {
     const { career } = get();
     if (!career) return;
@@ -156,7 +192,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   abandonCareer: () => {
     saveCareer(null);
-    set({ career: null, activeEventChoices: null, lastEventResult: null, careerEndSummary: null });
+    set({ career: null, activeEventChoices: null, lastEventResult: null, lastEventDeltas: [], lastNegotiationResult: null, careerEndSummary: null });
   },
 
   finalizeCareerEnd: () => {
@@ -196,6 +232,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       summary: `${career.careerGoals} buts, ${career.careerAssists} passes, ${career.caps} sélections, ${career.trophies.length} trophée(s) — retraite à ${career.age} ans`,
       createdAt: new Date().toISOString(),
       mode: career.mode,
+      majorAwards: career.majorAwards,
+      trophies: career.trophies,
+      history: career.history,
     };
 
     let nextMeta = addTokens(meta, tokensEarned);
@@ -214,11 +253,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  purchaseAdvantage: (id) => {
+  upgradeAdvantage: (id) => {
     const { meta } = get();
-    const advantage = getAdvantage(id);
-    if (!advantage) return;
-    const next = purchaseAdvantageMeta(meta, id, advantage.cost);
+    const next = upgradeAdvantageMeta(meta, id);
     saveMeta(next);
     set({ meta: next });
   },
@@ -228,6 +265,30 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const next = setEquippedMeta(meta, ids);
     saveMeta(next);
     set({ meta: next });
+  },
+
+  purchaseConsumable: (id) => {
+    const { meta } = get();
+    const next = purchaseConsumableMeta(meta, id);
+    saveMeta(next);
+    set({ meta: next });
+  },
+
+  activateConsumable: (id) => {
+    const { career, meta } = get();
+    if (!career || (meta.consumablesOwned[id] ?? 0) <= 0) return;
+    const consumable = getConsumable(id);
+    if (!consumable) return;
+
+    if (consumable.effect === 'instant_fitness') adjustFitness(career, consumable.value);
+    else if (consumable.effect === 'instant_morale') adjustMorale(career, consumable.value);
+    else if (consumable.effect === 'season_growth_boost') career.seasonGrowthBoostValue += consumable.value;
+    career.seasonLog.push(`Objet utilisé : ${consumable.name}.`);
+
+    const nextMeta = consumeItem(meta, id);
+    saveCareer(career);
+    saveMeta(nextMeta);
+    set({ career: { ...career }, meta: nextMeta });
   },
 }));
 

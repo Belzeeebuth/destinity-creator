@@ -2,6 +2,7 @@ interface ChoiceItem {
   id: string;
   name: string;
   description: string;
+  emoji?: string;
 }
 
 interface Props<T extends ChoiceItem> {
@@ -26,9 +27,12 @@ export default function SimpleChoiceGrid<T extends ChoiceItem>({ title, subtitle
             <button
               key={item.id}
               onClick={() => onSelect(item.id)}
-              className={`card flex flex-col gap-1.5 p-4 text-left transition ${active ? 'border-gold-500/60 ring-1 ring-gold-500/40' : 'hover:border-white/25'}`}
+              className={`card choice-option flex flex-col gap-1.5 p-4 text-left ${active ? 'is-selected' : 'hover:border-white/25'}`}
             >
-              <span className="font-display text-lg text-ink-100">{item.name}</span>
+              <span className="flex items-center gap-2 font-display text-lg text-ink-100">
+                {item.emoji && <span aria-hidden>{item.emoji}</span>}
+                {item.name}
+              </span>
               <p className="text-sm text-ink-300">{item.description}</p>
             </button>
           );

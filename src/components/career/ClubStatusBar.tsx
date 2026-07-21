@@ -1,7 +1,8 @@
 import type { PlayerState } from '../../engine/types';
 import { getClubTier } from '../../data/clubs';
-import { flagEmoji, getCountry } from '../../data/countries';
+import { getCountry } from '../../data/countries';
 import { formatMoney } from '../../engine/util';
+import CountryFlag from '../ui/CountryFlag';
 
 export default function ClubStatusBar({ career }: { career: PlayerState }) {
   const country = getCountry(career.countryCode);
@@ -11,7 +12,7 @@ export default function ClubStatusBar({ career }: { career: PlayerState }) {
     <div className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <div className="grid h-12 w-12 place-items-center rounded-full border border-gold-500/40 bg-pitch-800 text-xl">
-          {flagEmoji(career.countryCode)}
+          <CountryFlag code={career.countryCode} showCode={false} />
         </div>
         <div>
           <div className="font-display text-lg leading-tight text-ink-100">

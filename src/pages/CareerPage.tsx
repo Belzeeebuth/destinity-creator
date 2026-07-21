@@ -28,7 +28,7 @@ export default function CareerPage() {
       <ClubStatusBar career={career} />
       {career.phase === 'transfer_window' && <TransferWindowPanel career={career} />}
       {career.phase === 'preseason' && <PreseasonPanel career={career} />}
-      {career.phase === 'event' && <EventPanel career={career} />}
+      {(career.phase === 'event' || career.phase === 'mid_season') && <EventPanel career={career} />}
       {career.phase === 'season_sim' && <SeasonSimPanel career={career} />}
       {career.phase === 'season_end' && <SeasonEndPanel career={career} />}
     </div>

@@ -1,6 +1,7 @@
 // Progression méta persistante (localStorage) : jetons, avantages, badges, panthéon,
 // et suivi du défi quotidien. Indépendant d'une carrière en cours.
-import { MAX_EQUIPPED_ADVANTAGES } from '../data/shop';
+import { MAX_EQUIPPED_ADVANTAGES, getAdvantage, advantageUpgradeCost, getConsumable } from '../data/shop';
+import type { SeasonRecord } from './types';
 
 export interface PantheonEntry {
   id: string;
@@ -12,12 +13,16 @@ export interface PantheonEntry {
   summary: string;
   createdAt: string;
   mode: string;
+  majorAwards: string[];
+  trophies: string[];
+  history: SeasonRecord[];
 }
 
 export interface MetaProfile {
   tokens: number;
-  unlockedAdvantageIds: string[];
+  advantageLevels: Record<string, number>; // niveau débloqué (0 = non possédé) par avantage
   equippedAdvantageIds: string[];
+  consumablesOwned: Record<string, number>; // quantité en stock par objet consommable
   unlockedBadgeIds: string[];
   pantheon: PantheonEntry[];
   dailyChallenge: { lastCompletedDate: string | null; lastScore: number | null };
@@ -29,8 +34,9 @@ const STORAGE_KEY = 'destiny11_meta_v1';
 function defaultProfile(): MetaProfile {
   return {
     tokens: 0,
-    unlockedAdvantageIds: [],
+    advantageLevels: {},
     equippedAdvantageIds: [],
+    consumablesOwned: {},
     unlockedBadgeIds: [],
     pantheon: [],
     dailyChallenge: { lastCompletedDate: null, lastScore: null },
@@ -61,18 +67,39 @@ export function addTokens(meta: MetaProfile, amount: number): MetaProfile {
   return { ...meta, tokens: meta.tokens + amount };
 }
 
-export function purchaseAdvantage(meta: MetaProfile, advantageId: string, cost: number): MetaProfile {
-  if (meta.tokens < cost || meta.unlockedAdvantageIds.includes(advantageId)) return meta;
+export function upgradeAdvantage(meta: MetaProfile, advantageId: string): MetaProfile {
+  const advantage = getAdvantage(advantageId);
+  if (!advantage) return meta;
+  const currentLevel = meta.advantageLevels[advantageId] ?? 0;
+  if (currentLevel >= advantage.maxLevel) return meta;
+  const cost = advantageUpgradeCost(advantage, currentLevel);
+  if (meta.tokens < cost) return meta;
   return {
     ...meta,
     tokens: meta.tokens - cost,
-    unlockedAdvantageIds: [...meta.unlockedAdvantageIds, advantageId],
+    advantageLevels: { ...meta.advantageLevels, [advantageId]: currentLevel + 1 },
   };
 }
 
 export function setEquippedAdvantages(meta: MetaProfile, ids: string[]): MetaProfile {
-  const limited = ids.filter((id) => meta.unlockedAdvantageIds.includes(id)).slice(0, MAX_EQUIPPED_ADVANTAGES);
+  const limited = ids.filter((id) => (meta.advantageLevels[id] ?? 0) > 0).slice(0, MAX_EQUIPPED_ADVANTAGES);
   return { ...meta, equippedAdvantageIds: limited };
+}
+
+export function purchaseConsumable(meta: MetaProfile, consumableId: string): MetaProfile {
+  const consumable = getConsumable(consumableId);
+  if (!consumable || meta.tokens < consumable.cost) return meta;
+  return {
+    ...meta,
+    tokens: meta.tokens - consumable.cost,
+    consumablesOwned: { ...meta.consumablesOwned, [consumableId]: (meta.consumablesOwned[consumableId] ?? 0) + 1 },
+  };
+}
+
+export function consumeItem(meta: MetaProfile, consumableId: string): MetaProfile {
+  const owned = meta.consumablesOwned[consumableId] ?? 0;
+  if (owned <= 0) return meta;
+  return { ...meta, consumablesOwned: { ...meta.consumablesOwned, [consumableId]: owned - 1 } };
 }
 
 export function unlockBadges(meta: MetaProfile, ids: string[]): MetaProfile {

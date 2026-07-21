@@ -1,5 +1,5 @@
 import type { PlayerState } from '../../engine/types';
-import { ATTRIBUTE_KEYS, ATTRIBUTE_LABELS, getPosition } from '../../data/positions';
+import { ATTRIBUTE_KEYS, ATTRIBUTE_LABELS, ATTRIBUTE_ICONS, ATTRIBUTE_DESCRIPTIONS, getPosition } from '../../data/positions';
 import { overallRating } from '../../engine/types';
 
 export default function AttributesPanel({ career }: { career: PlayerState }) {
@@ -20,9 +20,11 @@ export default function AttributesPanel({ career }: { career: PlayerState }) {
           const isKey = position.keyAttributes.includes(key);
           const value = career.attributes[key];
           return (
-            <div key={key}>
+            <div key={key} title={ATTRIBUTE_DESCRIPTIONS[key]} className="cursor-help">
               <div className="flex justify-between text-xs">
-                <span className={isKey ? 'font-medium text-gold-400' : 'text-ink-300'}>{ATTRIBUTE_LABELS[key]}</span>
+                <span className={isKey ? 'font-medium text-gold-400' : 'text-ink-300'}>
+                  <span aria-hidden>{ATTRIBUTE_ICONS[key]}</span> {ATTRIBUTE_LABELS[key]}
+                </span>
                 <span className="text-ink-400">{Math.round(value)}</span>
               </div>
               <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-white/10">

@@ -22,10 +22,14 @@ saison à travers des décisions qui façonnent ton parcours :
 - **Représentation (agent)** — influence la fréquence et la qualité des offres de club reçues.
 
 Chaque saison : entraînement ciblé, évènements narratifs à choix (mentors, tentations,
-tensions de vestiaire, pression médiatique, sélection nationale, retraite anticipée...),
-simulation de la saison sportive, fenêtre des transferts, puis vieillissement (courbe de
-progression/déclin réaliste, prolongée jusqu'à 45 ans avec des mécaniques de fin de carrière
-dédiées : mentorat, reconversion, match hommage...).
+tensions de vestiaire, pression médiatique, sélection nationale, retraite anticipée...), une
+pause interactive de mi-saison, une fenêtre de transferts avec **négociation de contrat**
+(salaire, statut de titulaire, clause libératoire), simulation de la saison sportive — buts et
+passes pour les joueurs de champ, **arrêts et clean sheets pour les gardiens** —, blessures
+typées (avec risque de séquelle définitive), cartons/suspensions, distinctions individuelles
+(meilleur joueur mondial, meilleur buteur, équipe-type) et tournois internationaux tous les
+4 ans, puis vieillissement (courbe de progression/déclin réaliste, prolongée jusqu'à 45 ans
+avec des mécaniques de fin de carrière dédiées : mentorat, reconversion, match hommage...).
 
 ## Modes de jeu
 
@@ -39,9 +43,11 @@ dédiées : mentorat, reconversion, match hommage...).
 ## Progression méta (persistante localement)
 
 - **Jetons** gagnés en fin de carrière, à dépenser en **Boutique** contre des avantages
-  permanents (2 équipables max par carrière).
+  permanents améliorables par paliers (niveau 1 à 3, 2 équipables max par carrière) et des
+  objets consommables à usage unique (soin éclair, regain de moral, boost d'entraînement).
 - **Badges** cumulés à vie sur toutes les carrières jouées sur l'appareil.
-- **Panthéon** — classement local des meilleures légendes créées.
+- **Panthéon** — classement local des meilleures légendes créées, avec l'historique complet
+  saison par saison consultable pour chacune.
 
 Toute la progression est stockée uniquement dans le `localStorage` du navigateur : aucun
 compte, aucun serveur, aucune collecte de données.

@@ -5,10 +5,9 @@ import { adjustAttribute, adjustDiscipline, adjustFitness, adjustMorale, adjustR
 import { getBackground } from './backgrounds';
 import { getLifestyle } from './lifestyles';
 import type { CountryTier } from './countries';
-import { getEquippedEffect } from './shop';
 
 function shielded(state: PlayerState, baseProbability: number): boolean {
-  const shield = getEquippedEffect(state.advantagesEquipped, 'discipline_shield') + getEquippedEffect(state.advantagesEquipped, 'injury_shield');
+  const shield = (state.advantageEffects.discipline_shield ?? 0) + (state.advantageEffects.injury_shield ?? 0);
   return nextChance(state, clamp01(baseProbability * (1 - shield)));
 }
 

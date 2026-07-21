@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { PlayerState } from '../../engine/types';
 import { useGameStore, badgeNameById } from '../../state/store';
-import { getCountry, flagEmoji, TIER_INFO } from '../../data/countries';
+import { getCountry, TIER_INFO } from '../../data/countries';
 import { getPosition } from '../../data/positions';
 import { formatMoney } from '../../engine/util';
 import { encodeShareCode } from '../../engine/challenges';
+import CountryFlag from '../ui/CountryFlag';
+import OverallEvolutionChart from './OverallEvolutionChart';
 
 export default function CareerRecap({ career }: { career: PlayerState }) {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
 
   const country = getCountry(career.countryCode);
   const position = getPosition(career.positionCode);
+  const isGK = position.code === 'GK';
 
   function handleShare() {
     const text = `J'ai écrit ma légende sur Destiny Eleven : ${career.firstName} ${career.lastName} (${country.name}, ${position.name}) — ${career.careerGoals} buts, ${career.caps} sélections, retraite à ${career.age} ans. Score de légende : ${careerEndSummary?.legendScore ?? '?'}.`;
@@ -62,8 +65,8 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
         <p className="mt-3 font-display text-xl text-gold-400">
           {career.firstName} {career.lastName}
         </p>
-        <p className="text-sm text-ink-400">
-          {flagEmoji(career.countryCode)} {country.name} · {position.name} · {TIER_INFO[country.tier].label}
+        <p className="flex items-center justify-center gap-2 text-sm text-ink-400">
+          <CountryFlag code={career.countryCode} size="sm" /> {country.name} · {position.emoji} {position.name} · {TIER_INFO[country.tier].label}
         </p>
 
         {careerEndSummary && (
@@ -76,15 +79,39 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
       </div>
 
       <div className="card grid grid-cols-2 gap-3 p-5 text-center sm:grid-cols-4">
-        <Stat label="Buts" value={career.careerGoals} />
-        <Stat label="Passes D." value={career.careerAssists} />
+        {isGK ? (
+          <>
+            <Stat label="Clean sheets" value={career.careerCleanSheets} />
+            <Stat label="Arrêts" value={career.careerSaves} />
+          </>
+        ) : (
+          <>
+            <Stat label="Buts" value={career.careerGoals} />
+            <Stat label="Passes D." value={career.careerAssists} />
+          </>
+        )}
         <Stat label="Matchs" value={career.careerAppearances} />
         <Stat label="Sélections" value={career.caps} />
         <Stat label="Trophées" value={career.trophies.length} />
         <Stat label="Blessures" value={career.careerInjuries} />
+        <Stat label="Cartons 🟨/🟥" value={`${career.careerYellowCards}/${career.careerRedCards}`} />
+        <Stat label="Nominations Meilleur Joueur" value={career.ballonsAttempts} />
         <Stat label="Retraite à" value={`${career.age} ans`} />
         <Stat label="Valeur finale" value={formatMoney(career.marketValue)} />
       </div>
+
+      {career.history.length >= 2 && <OverallEvolutionChart history={career.history} />}
+
+      {career.majorAwards.length > 0 && (
+        <div className="card p-5">
+          <h2 className="font-display text-lg text-ink-100">🌟 Distinctions individuelles</h2>
+          <ul className="mt-2 flex flex-col gap-1 text-sm text-ink-300">
+            {career.majorAwards.map((a, i) => (
+              <li key={i}>🏅 {a}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {careerEndSummary && careerEndSummary.newBadgeIds.length > 0 && (
         <div className="card p-5">
@@ -101,7 +128,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
 
       {career.trophies.length > 0 && (
         <div className="card p-5">
-          <h2 className="font-display text-lg text-ink-100">Palmarès</h2>
+          <h2 className="font-display text-lg text-ink-100">Palmarès collectif</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-ink-300">
             {career.trophies.map((t, i) => (
               <li key={i}>🏆 {t}</li>
@@ -126,8 +153,17 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
                   <th className="pb-2">Âge</th>
                   <th className="pb-2">Club</th>
                   <th className="pb-2">Matchs</th>
-                  <th className="pb-2">Buts</th>
-                  <th className="pb-2">Passes</th>
+                  {isGK ? (
+                    <>
+                      <th className="pb-2">Clean sheets</th>
+                      <th className="pb-2">Arrêts</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="pb-2">Buts</th>
+                      <th className="pb-2">Passes</th>
+                    </>
+                  )}
                   <th className="pb-2">Note</th>
                   <th className="pb-2">Sélections</th>
                 </tr>
@@ -139,8 +175,17 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
                     <td className="py-1.5">{h.age}</td>
                     <td className="py-1.5">{h.clubName}</td>
                     <td className="py-1.5">{h.appearances}</td>
-                    <td className="py-1.5">{h.goals}</td>
-                    <td className="py-1.5">{h.assists}</td>
+                    {isGK ? (
+                      <>
+                        <td className="py-1.5">{h.cleanSheets}</td>
+                        <td className="py-1.5">{h.saves}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="py-1.5">{h.goals}</td>
+                        <td className="py-1.5">{h.assists}</td>
+                      </>
+                    )}
                     <td className="py-1.5">{h.avgRating.toFixed(1)}</td>
                     <td className="py-1.5">{h.caps}</td>
                   </tr>

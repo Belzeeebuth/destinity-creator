@@ -1,4 +1,4 @@
-import { POSITIONS, ATTRIBUTE_LABELS, type PositionCode } from '../../data/positions';
+import { POSITIONS, ATTRIBUTE_LABELS, ATTRIBUTE_ICONS, type PositionCode } from '../../data/positions';
 
 interface Props {
   value: PositionCode | null;
@@ -21,17 +21,20 @@ export default function PositionStep({ value, onSelect }: Props) {
             <button
               key={position.code}
               onClick={() => onSelect(position.code)}
-              className={`card flex flex-col gap-2 p-4 text-left transition ${active ? 'border-gold-500/60 ring-1 ring-gold-500/40' : 'hover:border-white/25'}`}
+              className={`card choice-option flex flex-col gap-2 p-4 text-left ${active ? 'is-selected' : 'hover:border-white/25'}`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-display text-lg text-ink-100">{position.name}</span>
+                <span className="flex items-center gap-2 font-display text-lg text-ink-100">
+                  <span aria-hidden>{position.emoji}</span>
+                  {position.name}
+                </span>
                 <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-ink-300">{position.short}</span>
               </div>
               <p className="text-sm text-ink-300">{position.description}</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {position.keyAttributes.map((attr) => (
                   <span key={attr} className="rounded-full bg-gold-500/10 px-2 py-0.5 text-[11px] text-gold-400">
-                    {ATTRIBUTE_LABELS[attr]}
+                    {ATTRIBUTE_ICONS[attr]} {ATTRIBUTE_LABELS[attr]}
                   </span>
                 ))}
               </div>

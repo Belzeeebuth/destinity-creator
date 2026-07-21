@@ -1,6 +1,7 @@
 export interface Agent {
   id: string;
   name: string;
+  emoji: string;
   description: string;
   offerFrequencyModifier: number; // multiplicateur du nombre d'offres de club reçues
   offerQualityModifier: number; // multiplicateur de la qualité des offres (championnat/salaire)
@@ -13,6 +14,7 @@ export const AGENTS: Agent[] = [
   {
     id: 'aucun',
     name: 'Aucun représentant',
+    emoji: '🙅',
     description:
       "Tu gères tout toi-même : appels, négociations, dossiers. Tu gardes 100% de tes revenus mais tu rateras des opportunités que seul un réseau peut ouvrir.",
     offerFrequencyModifier: 0.7,
@@ -24,6 +26,7 @@ export const AGENTS: Agent[] = [
   {
     id: 'famille',
     name: 'Agence familiale',
+    emoji: '👪',
     description:
       "Un proche — souvent un parent — gère ta carrière. La confiance est totale et la commission symbolique, mais le carnet d'adresses reste modeste.",
     offerFrequencyModifier: 0.9,
@@ -35,6 +38,7 @@ export const AGENTS: Agent[] = [
   {
     id: 'local',
     name: 'Agent local indépendant',
+    emoji: '🧳',
     description:
       "Un agent de licence qui connaît bien le championnat national. Un réseau correct pour trouver un club, sans accès aux grandes places européennes.",
     offerFrequencyModifier: 1.1,
@@ -46,6 +50,7 @@ export const AGENTS: Agent[] = [
   {
     id: 'agence',
     name: 'Grande agence internationale',
+    emoji: '🌐',
     description:
       "Un cabinet puissant, connecté aux plus grands clubs de la planète. Les portes s'ouvrent plus vite et plus grand — mais la pression aux résultats et les commissions grimpent en flèche.",
     offerFrequencyModifier: 1.4,

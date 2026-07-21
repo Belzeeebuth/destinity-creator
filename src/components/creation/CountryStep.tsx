@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { COUNTRIES, TIER_INFO, flagEmoji, type CountryTier } from '../../data/countries';
+import CountryFlag from '../ui/CountryFlag';
 
 interface Props {
   value: string | null;
@@ -61,7 +62,7 @@ export default function CountryStep({ value, onSelect }: Props) {
       {selected && (
         <div className="card p-4 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{flagEmoji(selected.code)}</span>
+            <CountryFlag code={selected.code} size="lg" />
             <span className="font-display text-lg text-ink-100">{selected.name}</span>
             <span
               className="ml-auto rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -88,9 +89,9 @@ export default function CountryStep({ value, onSelect }: Props) {
             <button
               key={country.code}
               onClick={() => onSelect(country.code)}
-              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${
+              className={`choice-option flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm ${
                 active
-                  ? 'border-gold-500/60 bg-gold-500/10 text-ink-100'
+                  ? 'is-selected text-ink-100'
                   : 'border-white/10 bg-pitch-900/40 text-ink-300 hover:border-white/25 hover:text-ink-100'
               }`}
             >

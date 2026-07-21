@@ -13,14 +13,20 @@ export interface SeasonRecord {
   appearances: number;
   goals: number;
   assists: number;
+  cleanSheets: number; // gardiens uniquement
+  saves: number; // gardiens uniquement
   avgRating: number; // 0-10
   trophies: string[];
+  majorAwards: string[]; // distinctions individuelles remportées cette saison
   caps: number;
   capGoals: number;
   captainThisSeason: boolean;
   overall: number;
   marketValue: number;
   wage: number;
+  cardsYellow: number;
+  cardsRed: number;
+  injuryNote?: string;
   narrative: string[]; // résumé texte des évènements marquants de la saison
 }
 
@@ -31,15 +37,26 @@ export interface TransferOffer {
   wage: number;
   signingBonus: number;
   role: 'titulaire' | 'rotation' | 'reserviste';
+  releaseClause?: number;
+  negotiated?: boolean;
 }
 
 export type CareerPhase =
   | 'preseason'
   | 'event'
+  | 'mid_season'
   | 'season_sim'
   | 'transfer_window'
   | 'season_end'
   | 'retired';
+
+export interface StatDelta {
+  key: string;
+  label: string;
+  icon: string;
+  delta: number;
+  isMoney?: boolean;
+}
 
 export interface EventChoiceOutcome {
   label: string; // texte du choix affiché
@@ -96,16 +113,24 @@ export interface PlayerState {
   caps: number;
   capGoals: number;
   captain: boolean;
-  ballonsAttempts: number;
+  ballonsAttempts: number; // nombre de fois nominé pour la distinction de meilleur joueur mondial
 
   careerGoals: number;
   careerAssists: number;
   careerAppearances: number;
   careerInjuries: number;
+  careerCleanSheets: number;
+  careerSaves: number;
+  careerYellowCards: number;
+  careerRedCards: number;
   trophies: string[];
   awards: string[];
+  majorAwards: string[]; // distinctions individuelles majeures remportées (meilleur joueur, meilleur buteur...)
+  consumables: string[]; // objets consommables de la boutique actuellement détenus
+  pendingMidSeasonChoice: { title: string; text: string; choices: { label: string }[] } | null;
 
   history: SeasonRecord[];
+  seenClubNames: string[]; // clubs déjà proposés ou fréquentés, pour ne pas les reproposer après un refus
   pendingOffers: TransferOffer[];
   pendingEvent: PendingEvent | null;
   eventsRemainingThisSeason: number;
@@ -113,12 +138,15 @@ export interface PlayerState {
   focusAttribute?: AttributeKey;
   seasonLog: string[];
   lastSeasonNarrative: string[];
+  lastGrowthDeltas: StatDelta[];
 
   retired: boolean;
   retirementReason?: string;
   finalized: boolean; // empêche un double octroi de jetons/badges après un rechargement de page
 
   advantagesEquipped: string[]; // ids d'avantages de la boutique actifs pour cette carrière
+  advantageEffects: Partial<Record<import('../data/shop').AdvantageEffect, number>>; // valeurs résolues une fois pour toutes (niveau au moment du lancement)
+  seasonGrowthBoostValue: number; // bonus temporaire de progression (objet consommable), remis à 0 après usage
 }
 
 export function overallRating(
@@ -128,8 +156,10 @@ export function overallRating(
   let sum = 0;
   let weightSum = 0;
   for (const key of Object.keys(weights) as AttributeKey[]) {
-    sum += attributes[key] * weights[key];
-    weightSum += weights[key];
+    const weight = weights[key];
+    if (weight <= 0) continue; // attribut sans influence pour ce poste (ex. reflexes hors gardien)
+    sum += attributes[key] * weight;
+    weightSum += weight;
   }
-  return Math.round((sum / weightSum) * 10) / 10;
+  return weightSum > 0 ? Math.round((sum / weightSum) * 10) / 10 : 0;
 }

@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { LEGEND_CAREERS } from '../data/legends';
-import { flagEmoji, getCountry } from '../data/countries';
+import { getCountry } from '../data/countries';
 import { getPosition } from '../data/positions';
 import { useGameStore } from '../state/store';
+import CountryFlag from '../components/ui/CountryFlag';
 
 export default function StoryModePage() {
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function StoryModePage() {
           return (
             <div key={legend.id} className="card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{flagEmoji(legend.countryCode)}</span>
+                <CountryFlag code={legend.countryCode} size="lg" />
                 <div>
                   <div className="font-display text-lg text-ink-100">{legend.name}</div>
                   <div className="text-xs text-ink-400">

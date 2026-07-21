@@ -39,16 +39,22 @@ const CLUB_TEMPLATES = [
   'Dynamo {city}', '{city} Rovers', 'Étoile de {city}', 'Union {city}', '{city} Wanderers',
 ];
 
-export function generateClubName(rng: Rng): string {
-  const city = generateCityName(rng);
-  const template = pick(rng, CLUB_TEMPLATES);
-  return template.replace('{city}', city);
+export function generateClubName(rng: Rng, avoid: string[] = []): string {
+  let name = '';
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const city = generateCityName(rng);
+    const template = pick(rng, CLUB_TEMPLATES);
+    name = template.replace('{city}', city);
+    if (!avoid.includes(name)) return name;
+  }
+  return name;
 }
 
 export interface ClubRef {
   name: string;
   tierIndex: number;
   countryCode: string;
+  releaseClause?: number;
 }
 
 export function getClubTier(index: number): ClubTier {

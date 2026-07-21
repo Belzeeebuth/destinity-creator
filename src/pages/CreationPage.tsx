@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CountryStep from '../components/creation/CountryStep';
 import PositionStep from '../components/creation/PositionStep';
@@ -6,10 +6,12 @@ import SimpleChoiceGrid from '../components/creation/SimpleChoiceGrid';
 import { BACKGROUNDS } from '../data/backgrounds';
 import { LIFESTYLES } from '../data/lifestyles';
 import { AGENTS } from '../data/agents';
-import { getCountry, flagEmoji, TIER_INFO } from '../data/countries';
+import { getCountry, TIER_INFO } from '../data/countries';
 import { getPosition, type PositionCode } from '../data/positions';
 import { useGameStore } from '../state/store';
-import { newRandomSeed } from '../engine/rng';
+import { newRandomSeed, mulberry32 } from '../engine/rng';
+import { randomName } from '../data/names';
+import CountryFlag from '../components/ui/CountryFlag';
 
 const STEPS = ['Pays', 'Poste', 'Origine', 'Mode de vie', 'Représentation', 'Résumé'];
 
@@ -182,23 +184,45 @@ function SummaryStep({
         <p className="mt-1 text-sm text-ink-300">Vérifie ton profil (et donne-lui un nom si tu le souhaites).</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <input
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-          placeholder="Prénom (auto si vide)"
-          className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
-        />
-        <input
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-          placeholder="Nom (auto si vide)"
-          className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
-        />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+          <input
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Prénom (auto si vide)"
+            className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
+          />
+          <input
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Nom (auto si vide)"
+            className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const generated = randomName(countryCode, mulberry32(newRandomSeed()));
+            setFirstName(generated.firstName);
+            setLastName(generated.lastName);
+          }}
+          className="btn-outline shrink-0 rounded-lg px-4 py-2 text-sm hover:border-gold-500/50 hover:text-gold-400"
+          title="Générer un nom aléatoire"
+        >
+          🎲 Randomiser
+        </button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-        <SummaryRow label="Pays" value={`${flagEmoji(country.code)} ${country.name}`} sub={TIER_INFO[country.tier].difficulty} />
+        <SummaryRow
+          label="Pays"
+          value={
+            <span className="flex items-center gap-2">
+              <CountryFlag code={country.code} showCode={false} /> {country.name}
+            </span>
+          }
+          sub={TIER_INFO[country.tier].difficulty}
+        />
         <SummaryRow label="Poste" value={position.name} sub={position.short} />
         <SummaryRow label="Origine" value={background.name} />
         <SummaryRow label="Mode de vie" value={lifestyle.name} />
@@ -209,7 +233,7 @@ function SummaryStep({
   );
 }
 
-function SummaryRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function SummaryRow({ label, value, sub }: { label: string; value: ReactNode; sub?: string }) {
   return (
     <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3">
       <div className="text-xs uppercase tracking-wide text-ink-500">{label}</div>
