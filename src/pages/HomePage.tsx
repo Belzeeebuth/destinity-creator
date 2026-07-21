@@ -1,8 +1,17 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../state/store';
 
 export default function HomePage() {
   const career = useGameStore((s) => s.career);
+  const abandonCareer = useGameStore((s) => s.abandonCareer);
+  const navigate = useNavigate();
+  const [confirmingNew, setConfirmingNew] = useState(false);
+
+  function startFreshCareer() {
+    abandonCareer();
+    navigate('/creation');
+  }
 
   return (
     <div className="flex flex-col items-center gap-14 py-6 text-center">
@@ -19,13 +28,42 @@ export default function HomePage() {
         </p>
 
         {career && !career.retired ? (
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
-            <Link to="/carriere" className="btn-gold rounded-full px-8 py-3 text-base">
-              Reprendre ma carrière — {career.firstName} {career.lastName}
-            </Link>
-            <span className="text-xs text-ink-500">
-              Saison {career.season} · {career.age} ans
-            </span>
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex flex-col items-center gap-3 sm:flex-row">
+              <Link to="/carriere" className="btn-gold rounded-full px-8 py-3 text-base">
+                Reprendre ma carrière — {career.firstName} {career.lastName}
+              </Link>
+              <span className="text-xs text-ink-500">
+                Saison {career.season} · {career.age} ans
+              </span>
+            </div>
+
+            {!confirmingNew ? (
+              <button
+                onClick={() => setConfirmingNew(true)}
+                className="text-xs text-ink-500 underline decoration-dotted underline-offset-2 hover:text-ink-300"
+              >
+                Commencer une nouvelle carrière à la place
+              </button>
+            ) : (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3 text-xs text-ink-300">
+                <p>
+                  Ta carrière en cours ({career.firstName} {career.lastName}, saison {career.season}) sera
+                  définitivement perdue. Confirmer ?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={startFreshCareer}
+                    className="rounded-full border border-red-500/50 px-4 py-1.5 font-semibold text-red-400 transition hover:bg-red-500/10"
+                  >
+                    Oui, écraser et recommencer
+                  </button>
+                  <button onClick={() => setConfirmingNew(false)} className="btn-outline rounded-full px-4 py-1.5">
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <Link to="/creation" className="btn-gold rounded-full px-8 py-3 text-base">
