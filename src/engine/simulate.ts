@@ -8,7 +8,7 @@ import { pickRealClub } from '../data/realClubs';
 import { hasLeagueSystem, weightedDivisionLevel, pickClubFromDivision, maxDivisionLevel, divisionAt } from '../data/leagues';
 import { INJURY_TYPES, WORLD_PLAYER_AWARD, TOP_SCORER_AWARD, TEAM_OF_YEAR_AWARD } from '../data/awards';
 import { nextFloat, nextInt, nextChance, nextWeightedPick, rngFromCarrier } from './rng';
-import { clamp, adjustReputation, adjustFitness, adjustMorale, adjustAttribute, formatMoney } from './util';
+import { clamp, adjustReputation, adjustFitness, adjustMorale, applyPermanentAttributeLoss, formatMoney } from './util';
 
 export function computeOverall(state: PlayerState, position: Position): number {
   return overallRating(state.attributes, position.weights);
@@ -144,8 +144,7 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
     if (nextChance(state, type.permanentDecayChance)) {
       const decay = nextInt(state, 2, 6);
       const target = nextChance(state, 0.5) ? 'vitesse' : 'physique';
-      adjustAttribute(state, target, -decay);
-      state.potential[target] = clamp(state.potential[target] - decay, 1, 99);
+      applyPermanentAttributeLoss(state, target, decay);
       narrative.push(`Séquelle physique durable : perte définitive de ${target === 'vitesse' ? 'vitesse' : 'physique'} (-${decay}).`);
     }
   } else {

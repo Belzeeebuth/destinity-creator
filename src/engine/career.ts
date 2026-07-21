@@ -116,6 +116,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     pendingTournamentInvite: null,
     activeTournament: null,
     playedTournamentThisSeason: false,
+    rival: null,
 
     history: [],
     seenClubNames: [],
@@ -123,6 +124,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     pendingEvent: null,
     eventsRemainingThisSeason: 0,
     recentEventIds: [],
+    firedOnceEventIds: [],
     seasonLog: [],
     lastSeasonNarrative: [],
     lastGrowthDeltas: [],

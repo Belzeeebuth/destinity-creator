@@ -12,6 +12,13 @@ export function adjustAttribute(state: PlayerState, key: AttributeKey, delta: nu
   }
 }
 
+// Contrairement à adjustAttribute, ceci abaisse aussi le potentiel : la perte est réellement
+// définitive, l'entraînement ne pourra jamais la faire remonter au-delà de ce nouveau plafond.
+export function applyPermanentAttributeLoss(state: PlayerState, key: AttributeKey, amount: number): void {
+  state.attributes[key] = clamp(Math.round((state.attributes[key] - amount) * 10) / 10, 1, 99);
+  state.potential[key] = clamp(Math.round((state.potential[key] - amount) * 10) / 10, state.attributes[key], 99);
+}
+
 export function adjustMorale(state: PlayerState, delta: number): void {
   state.morale = clamp(Math.round(state.morale + delta), 0, 100);
 }

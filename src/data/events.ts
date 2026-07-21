@@ -1,9 +1,20 @@
 import type { PlayerState, EventChoiceOutcome } from '../engine/types';
 import type { Rng } from '../engine/rng';
 import { nextInt, nextChance, rngFromCarrier } from '../engine/rng';
-import { adjustAttribute, adjustDiscipline, adjustFitness, adjustMorale, adjustReputation, formatMoney } from '../engine/util';
+import {
+  adjustAttribute,
+  adjustDiscipline,
+  adjustFitness,
+  adjustMorale,
+  adjustReputation,
+  applyPermanentAttributeLoss,
+  clamp,
+  formatMoney,
+} from '../engine/util';
 import { getBackground } from './backgrounds';
 import { getLifestyle } from './lifestyles';
+import { getAgent } from './agents';
+import { randomName } from './names';
 import type { CountryTier } from './countries';
 
 function shielded(state: PlayerState, baseProbability: number): boolean {
@@ -19,6 +30,7 @@ export interface EventTemplate {
   id: string;
   minAge: number;
   maxAge: number;
+  once?: boolean; // ne peut se déclencher qu'une seule fois par carrière (scénario unique)
   weight: (state: PlayerState, countryTier: CountryTier) => number; // 0 = exclu
   build: (state: PlayerState, rng: Rng) => { title: string; text: string; choices: EventChoiceOutcome[] };
 }
@@ -674,6 +686,324 @@ const EVENTS: EventTemplate[] = [
       ],
     }),
   },
+
+  // ---------------- CHOIX À HAUT RISQUE (vraies répercussions négatives) ----------------
+  {
+    id: 'career_defining_gamble',
+    minAge: 24,
+    maxAge: 36,
+    once: true,
+    weight: (s) => (s.reputation >= 50 ? 9 : 0),
+    build: () => ({
+      title: 'Le pari de trop',
+      text: "À quelques jours d'une finale décisive, une gêne musculaire inquiétante s'est réveillée à l'entraînement. Le staff médical est formel : jouer comporte un vrai risque physique.",
+      choices: [
+        {
+          label: 'Jouer coûte que coûte, quel qu’en soit le prix',
+          apply: (s) => {
+            if (shielded(s, 0.55)) {
+              const target = nextChance(s, 0.5) ? 'physique' : 'vitesse';
+              const decay = nextInt(s, 5, 9);
+              s.careerInjuries += 1;
+              adjustFitness(s, -32);
+              applyPermanentAttributeLoss(s, target, decay);
+              return `Le pari se retourne contre toi : rupture grave, une bonne partie de la saison s'envole et une séquelle physique définitive t'accompagnera pour le reste de ta carrière (-${decay} ${target === 'physique' ? 'Physique' : 'Vitesse'} définitif).`;
+            }
+            adjustReputation(s, 12);
+            adjustMorale(s, 10);
+            return 'Tu forces le destin et deviens le héros d’un soir que personne n’oubliera. (+Réputation, +Moral)';
+          },
+        },
+        {
+          label: 'Te faire infiltrer pour tenir le choc',
+          apply: (s) => {
+            if (shielded(s, 0.3)) {
+              const decay = nextInt(s, 2, 4);
+              s.careerInjuries += 1;
+              adjustFitness(s, -18);
+              applyPermanentAttributeLoss(s, 'physique', decay);
+              return `Le geste médical masque la douleur sans la soigner : séquelle physique durable (-${decay} Physique définitif).`;
+            }
+            adjustReputation(s, 5);
+            return 'Le compromis médical tient bon le temps du match. (+Réputation)';
+          },
+        },
+        {
+          label: 'Déclarer forfait, priorité à la santé',
+          apply: (s) => { adjustDiscipline(s, 3); adjustReputation(s, -3); return 'Le staff médical valide ta prudence, mais certains y voient un manque de tempérament dans les grands rendez-vous. (+Discipline, -Réputation)'; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'explosive_press_conference',
+    minAge: 20,
+    maxAge: 40,
+    weight: (s) => (s.reputation >= 35 ? 6 : 2),
+    build: () => ({
+      title: 'Excès de confiance en conférence de presse',
+      text: 'Un journaliste te pousse dans tes retranchements sur ton prochain adversaire. Le micro est chaud, les caméras tournent.',
+      choices: [
+        {
+          label: "Humilier verbalement l'adversaire",
+          apply: (s) => {
+            if (nextChance(s, 0.4)) {
+              adjustReputation(s, 14);
+              adjustMorale(s, 6);
+              return 'Ta sortie fracassante fait le tour des plateaux et galvanise tout un stade derrière toi. (+Réputation, +Moral)';
+            }
+            adjustReputation(s, -22);
+            adjustDiscipline(s, -8);
+            if (s.rival) s.rival.intensity = clamp(s.rival.intensity + 10, 0, 100);
+            return "Tes propos se retournent contre toi en boucle sur tous les plateaux : ta réputation en prend un coup sévère et durable. (-Réputation, -Discipline)";
+          },
+        },
+        {
+          label: 'Rester factuel et respectueux',
+          apply: (s) => { adjustReputation(s, 3); return 'Une posture sobre qui ne prête pas le flanc à la polémique. (+Réputation)'; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'reckless_tackle_training',
+    minAge: 18,
+    maxAge: 40,
+    weight: () => 6,
+    build: () => ({
+      title: "Prouver ta valeur par la force",
+      text: "Un exercice d'opposition à l'entraînement s'envenime. Le concurrent direct à ton poste ne te lâche pas d'une semelle.",
+      choices: [
+        {
+          label: 'Taper fort pour marquer le territoire',
+          apply: (s) => {
+            if (shielded(s, 0.4)) {
+              const target = nextChance(s, 0.5) ? 'physique' : 'vitesse';
+              const decay = nextInt(s, 3, 6);
+              s.careerInjuries += 1;
+              adjustFitness(s, -25);
+              applyPermanentAttributeLoss(s, target, decay);
+              return `Le tacle se retourne violemment contre toi : blessure sérieuse et séquelle physique définitive (-${decay} ${target === 'physique' ? 'Physique' : 'Vitesse'}).`;
+            }
+            adjustAttribute(s, 'mental', 2);
+            adjustReputation(s, 3);
+            return 'Le message est passé, sans dégâts. Le staff technique note ton caractère. (+Mental, +Réputation)';
+          },
+        },
+        {
+          label: 'Jouer la carte de la technique, éviter le choc',
+          apply: (s) => { adjustAttribute(s, 'technique', 2); return 'Tu réponds par le geste plutôt que par la force. (+Technique)'; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'black_market_agent_offer',
+    minAge: 20,
+    maxAge: 38,
+    once: true,
+    weight: (s) => (s.discipline < 55 || s.wage > 200000 ? 8 : 3),
+    build: () => ({
+      title: 'Une proposition trouble',
+      text: "Un intermédiaire discret approche ton entourage : de l'argent facile contre quelques « arrangements » que tu préfères ne pas trop détailler.",
+      choices: [
+        {
+          label: "Accepter, l'appât du gain",
+          apply: (s) => {
+            if (nextChance(s, 0.45)) {
+              adjustReputation(s, -28);
+              adjustDiscipline(s, -10);
+              return "L'affaire fuite dans la presse : scandale retentissant, ta réputation est ternie durablement. (-Réputation, -Discipline)";
+            }
+            adjustDiscipline(s, -4);
+            s.marketValue = Math.round(s.marketValue * 1.02);
+            return "L'arrangement reste secret... pour cette fois. Un poids sur la conscience malgré tout. (-Discipline)";
+          },
+        },
+        {
+          label: 'Refuser et prévenir ton club',
+          apply: (s) => { adjustReputation(s, 4); adjustDiscipline(s, 5); return 'Ta probité ne fait aucun doute aux yeux de tous. (+Réputation, +Discipline)'; },
+        },
+        {
+          label: "En parler d'abord à ton agent",
+          apply: (s) => {
+            const agent = getAgent(s.agentId);
+            if (agent.id === 'aucun') { adjustDiscipline(s, 4); return 'Sans représentant pour te conseiller, tu tranches seul et refuses net. (+Discipline)'; }
+            if (agent.pressureModifier >= 1.5) {
+              adjustReputation(s, -6);
+              adjustDiscipline(s, 2);
+              return `${agent.emoji} ${agent.name} y voit une opportunité et négocie l'affaire en coulisses... contre une coquette commission. Discipline préservée, réputation entachée. (-Réputation, +Discipline)`;
+            }
+            adjustReputation(s, 3);
+            adjustDiscipline(s, 3);
+            return `${agent.emoji} ${agent.name} te conseille formellement de refuser. Tu suis son avis. (+Réputation, +Discipline)`;
+          },
+        },
+      ],
+    }),
+  },
+
+  // ---------------- INTERACTIONS RÉGULIÈRES AVEC L'AGENT ----------------
+  {
+    id: 'agent_career_checkin',
+    minAge: 16,
+    maxAge: 45,
+    weight: () => 7,
+    build: (s) => {
+      const agent = getAgent(s.agentId);
+      const text = agent.id === 'aucun'
+        ? 'Sans agent, tu dois gérer seul les prochaines étapes de ta carrière : négociations, image publique, planning des prochaines saisons.'
+        : `${agent.emoji} ${agent.name} te convoque pour faire le point sur la direction à donner à ta carrière.`;
+      return {
+        title: 'Point de carrière',
+        text,
+        choices: [
+          {
+            label: 'Suivre sa stratégie à la lettre',
+            apply: (s2) => {
+              const agent2 = getAgent(s2.agentId);
+              adjustReputation(s2, Math.round(2 * agent2.offerQualityModifier));
+              return agent2.id === 'aucun'
+                ? 'Tu traces ta route méthodiquement, sans intermédiaire. (+Réputation)'
+                : `${agent2.emoji} Tu t'en remets entièrement à ${agent2.name} pour la suite. (+Réputation)`;
+            },
+          },
+          {
+            label: 'Le pousser à viser plus haut, quitte à forcer les portes',
+            apply: (s2) => {
+              if (nextChance(s2, 0.5)) { adjustReputation(s2, 6); return 'Un coup de bluff qui paie : ton dossier atterrit sur le bureau de clubs bien plus huppés. (+Réputation)'; }
+              adjustDiscipline(s2, -4);
+              return 'La manœuvre agace certains dirigeants, qui te trouvent trop gourmand pour ton rang. (-Discipline)';
+            },
+          },
+          {
+            label: 'Prendre du recul et décider par toi-même',
+            apply: (s2) => { adjustAttribute(s2, 'mental', 2); return 'Tu apprends à faire confiance à ton propre jugement. (+Mental)'; },
+          },
+        ],
+      };
+    },
+  },
+
+  // ---------------- RIVALITÉ DE VESTIAIRE PERSISTANTE ----------------
+  {
+    id: 'locker_room_rival_emerges',
+    minAge: 18,
+    maxAge: 40,
+    weight: (s) => (s.rival ? 0 : 7),
+    build: () => ({
+      title: 'Une rivalité s’installe dans le vestiaire',
+      text: 'Un coéquipier de ton niveau, agacé de rester dans ton ombre, multiplie les piques à ton égard depuis plusieurs semaines.',
+      choices: [
+        {
+          label: 'Le remettre à sa place publiquement',
+          apply: (s) => {
+            const generated = randomName(s.countryCode, rngFromCarrier(s));
+            const rivalName = `${generated.firstName} ${generated.lastName}`;
+            s.rival = { name: rivalName, emergedSeason: s.season, intensity: 45 };
+            adjustReputation(s, 2);
+            adjustMorale(s, -3);
+            return `Le clash est ouvertement lancé avec ${rivalName}. Le vestiaire retient son souffle. (+Réputation, -Moral)`;
+          },
+        },
+        {
+          label: 'Ignorer la provocation',
+          apply: (s) => {
+            const generated = randomName(s.countryCode, rngFromCarrier(s));
+            const rivalName = `${generated.firstName} ${generated.lastName}`;
+            s.rival = { name: rivalName, emergedSeason: s.season, intensity: 25 };
+            adjustAttribute(s, 'mental', 2);
+            return `Tu hausses les épaules, mais ${rivalName} ne compte visiblement pas en rester là. (+Mental)`;
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'rival_flare_up',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.rival && s.rival.intensity < 85 ? 8 : 0),
+    build: (s) => ({
+      title: `Coup de sang avec ${s.rival!.name}`,
+      text: `La tension avec ${s.rival!.name} atteint un nouveau pic après un nouvel accrochage à l'entraînement.`,
+      choices: [
+        {
+          label: 'Envenimer la rivalité publiquement',
+          apply: (s2) => {
+            const rival = s2.rival!;
+            rival.intensity = clamp(rival.intensity + 25, 0, 100);
+            adjustReputation(s2, 4);
+            adjustDiscipline(s2, -5);
+            return `Tu alimentes le clash avec ${rival.name} au grand jour. (+Réputation, -Discipline)`;
+          },
+        },
+        {
+          label: 'Canaliser cette rivalité pour progresser',
+          apply: (s2) => {
+            const rival = s2.rival!;
+            rival.intensity = clamp(rival.intensity + 10, 0, 100);
+            adjustAttribute(s2, s2.focusAttribute ?? 'physique', 2);
+            return `Cette concurrence te pousse à repousser tes limites face à ${rival.name}.`;
+          },
+        },
+        {
+          label: 'Tenter d’apaiser les choses',
+          apply: (s2) => {
+            const rival = s2.rival!;
+            rival.intensity = clamp(rival.intensity - 20, 0, 100);
+            adjustMorale(s2, 4);
+            if (rival.intensity <= 10) {
+              const name = rival.name;
+              s2.rival = null;
+              return `Une discussion sincère avec ${name} éteint la rivalité : vous repartez sur de bonnes bases. (+Moral)`;
+            }
+            return `Un premier pas vers l’apaisement avec ${rival.name}, sans tout résoudre. (+Moral)`;
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'rival_boiling_point',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.rival && s.rival.intensity >= 85 ? 14 : 0),
+    build: (s) => ({
+      title: `Clash final avec ${s.rival!.name}`,
+      text: `La rivalité avec ${s.rival!.name} atteint un point de rupture. Le vestiaire ne peut plus l'ignorer : une résolution est désormais inévitable.`,
+      choices: [
+        {
+          label: 'Crever l’abcès en face à face',
+          apply: (s2) => {
+            const name = s2.rival!.name;
+            if (nextChance(s2, 0.5)) {
+              s2.rival = null;
+              adjustAttribute(s2, 'mental', 3);
+              adjustReputation(s2, 4);
+              adjustMorale(s2, 6);
+              return `Une explication franche avec ${name} désamorce tout : le respect mutuel prend le dessus. (+Mental, +Réputation, +Moral)`;
+            }
+            s2.rival = null;
+            adjustReputation(s2, -18);
+            adjustDiscipline(s2, -8);
+            adjustMorale(s2, -8);
+            return `La confrontation dégénère avec ${name} devant tout le vestiaire. Une image ternie qui te colle à la peau. (-Réputation, -Discipline, -Moral)`;
+          },
+        },
+        {
+          label: 'Demander une médiation via le staff',
+          apply: (s2) => {
+            const name = s2.rival!.name;
+            s2.rival = null;
+            adjustDiscipline(s2, 4);
+            adjustMorale(s2, 2);
+            return `Le staff impose une médiation encadrée avec ${name}. Rien n'est vraiment réglé sur le fond, mais la tension retombe. (+Discipline, +Moral)`;
+          },
+        },
+      ],
+    }),
+  },
 ];
 
 export function allEventTemplates(): EventTemplate[] {
@@ -686,7 +1016,12 @@ export function rollEvent(
   exclude: string[],
 ): { template: EventTemplate; title: string; text: string; choices: EventChoiceOutcome[] } | null {
   const candidates = EVENTS.filter(
-    (e) => state.age >= e.minAge && state.age <= e.maxAge && !exclude.includes(e.id) && e.weight(state, countryTier) > 0,
+    (e) =>
+      state.age >= e.minAge &&
+      state.age <= e.maxAge &&
+      !exclude.includes(e.id) &&
+      !(e.once && state.firedOnceEventIds.includes(e.id)) &&
+      e.weight(state, countryTier) > 0,
   );
   if (candidates.length === 0) return null;
   const total = candidates.reduce((sum, e) => sum + e.weight(state, countryTier), 0);
@@ -696,6 +1031,7 @@ export function rollEvent(
     r -= cand.weight(state, countryTier);
     if (r <= 0) { chosen = cand; break; }
   }
+  if (chosen.once) state.firedOnceEventIds = [...state.firedOnceEventIds, chosen.id];
   const rng = rngFromCarrier(state);
   const built = chosen.build(state, rng);
   return { template: chosen, title: built.title, text: built.text, choices: built.choices };

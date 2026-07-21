@@ -134,6 +134,14 @@ export interface TournamentRivalStat {
   avgRating: number;
 }
 
+// ---------------- Rivalité de vestiaire persistante ----------------
+
+export interface LockerRoomRival {
+  name: string;
+  emergedSeason: number;
+  intensity: number; // 0-100 : monte avec les provocations, descend avec les tentatives d'apaisement
+}
+
 export interface TournamentState {
   tournamentName: string;
   stage: TournamentStageKey;
@@ -202,6 +210,7 @@ export interface PlayerState {
   pendingTournamentInvite: PendingTournamentInvite | null;
   activeTournament: TournamentState | null;
   playedTournamentThisSeason: boolean;
+  rival: LockerRoomRival | null;
 
   history: SeasonRecord[];
   seenClubNames: string[]; // clubs déjà proposés ou fréquentés, pour ne pas les reproposer après un refus
@@ -209,6 +218,7 @@ export interface PlayerState {
   pendingEvent: PendingEvent | null;
   eventsRemainingThisSeason: number;
   recentEventIds: string[];
+  firedOnceEventIds: string[]; // évènements à scénario unique déjà déclenchés cette carrière
   focusAttribute?: AttributeKey;
   seasonLog: string[];
   lastSeasonNarrative: string[];

@@ -32,7 +32,11 @@ function loadCareer(): PlayerState | null {
   try {
     const raw = localStorage.getItem(CAREER_STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as PlayerState;
+    const parsed = JSON.parse(raw) as PlayerState;
+    // Rétrocompatibilité : une carrière sauvegardée avant l'ajout d'un champ ne l'aura pas.
+    parsed.rival ??= null;
+    parsed.firedOnceEventIds ??= [];
+    return parsed;
   } catch {
     return null;
   }

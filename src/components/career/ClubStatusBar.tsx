@@ -1,12 +1,24 @@
+import { useEffect, useRef, useState } from 'react';
 import type { PlayerState } from '../../engine/types';
+import { overallRating } from '../../engine/types';
 import { resolveClubTier } from '../../data/clubs';
 import { getCountry } from '../../data/countries';
+import { getPosition } from '../../data/positions';
 import { formatMoney } from '../../engine/util';
 import CountryFlag from '../ui/CountryFlag';
 
 export default function ClubStatusBar({ career }: { career: PlayerState }) {
   const country = getCountry(career.countryCode);
   const clubTier = career.club ? resolveClubTier(career.club) : null;
+  const overall = overallRating(career.attributes, getPosition(career.positionCode).weights);
+
+  const prevOverallRef = useRef(overall);
+  const [delta, setDelta] = useState(0);
+  useEffect(() => {
+    const diff = Math.round((overall - prevOverallRef.current) * 10) / 10;
+    if (diff !== 0) setDelta(diff);
+    prevOverallRef.current = overall;
+  }, [overall]);
 
   return (
     <div className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -22,6 +34,19 @@ export default function ClubStatusBar({ career }: { career: PlayerState }) {
           <div className="text-xs text-ink-400">
             {career.age} ans · Saison {career.season} · {country.name}
           </div>
+        </div>
+        <div className="ml-2 flex flex-col items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-3 py-1">
+          <span className="text-[9px] uppercase tracking-wide text-gold-400/80">Note</span>
+          <span className="font-display text-xl font-bold leading-none text-gold-400">{overall.toFixed(1)}</span>
+          {delta !== 0 && (
+            <span
+              key={`${career.season}-${overall}`}
+              className={`animate-pop-in text-[11px] font-semibold leading-none ${delta > 0 ? 'text-emerald-400' : 'text-red-400'}`}
+            >
+              {delta > 0 ? '+' : ''}
+              {delta.toFixed(1)}
+            </span>
+          )}
         </div>
       </div>
 
