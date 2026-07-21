@@ -1,3 +1,5 @@
+import { hasLeagueSystem, divisionAt } from './leagues';
+
 export interface ClubTier {
   index: number; // 0 = sans club .. 5 = élite mondiale
   label: string;
@@ -20,8 +22,35 @@ export interface ClubRef {
   tierIndex: number;
   countryCode: string;
   releaseClause?: number;
+  divisionLevel?: number; // niveau réel dans la pyramide du pays, si connue (1 = sommet)
 }
 
 export function getClubTier(index: number): ClubTier {
   return CLUB_TIERS[Math.max(0, Math.min(CLUB_TIERS.length - 1, index))];
+}
+
+export interface ClubTierDisplay {
+  label: string; // vrai nom de division si connu, sinon libellé générique
+  prestige: number;
+  wageBase: number;
+  index: number;
+}
+
+interface ClubTierLike {
+  tierIndex: number;
+  countryCode: string;
+  divisionLevel?: number;
+}
+
+// Point d'entrée unique pour afficher/évaluer le "niveau" d'un club (ClubRef ou TransferOffer) :
+// utilise la vraie division quand elle est connue, sinon retombe sur le palier générique.
+export function resolveClubTier(club: ClubTierLike | null): ClubTierDisplay {
+  if (club && club.divisionLevel && hasLeagueSystem(club.countryCode)) {
+    const division = divisionAt(club.countryCode, club.divisionLevel);
+    if (division) {
+      return { label: division.name, prestige: division.prestige, wageBase: division.wageBase, index: club.tierIndex };
+    }
+  }
+  const tier = getClubTier(club?.tierIndex ?? 0);
+  return { label: tier.label, prestige: tier.prestige, wageBase: tier.wageBase, index: tier.index };
 }

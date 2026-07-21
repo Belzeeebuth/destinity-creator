@@ -8,11 +8,17 @@ import { randomName } from '../data/names';
 import { rollEvent } from '../data/events';
 import { rollMidSeasonEvent } from '../data/midSeasonEvents';
 import { resolveEquippedEffects } from '../data/shop';
-import { getClubTier } from '../data/clubs';
-import type { EventChoiceOutcome, PlayerState } from './types';
+import { resolveClubTier } from '../data/clubs';
+import type { EventChoiceOutcome, PlayerState, TournamentMatchResult } from './types';
 import { MAX_AGE, START_AGE } from './types';
 import { initializeAttributes, growSeason } from './attributes';
 import { generateOffers, simulateSeason } from './simulate';
+import {
+  checkTournamentEligibility,
+  startTournament,
+  playNextGroupMatch,
+  playKnockoutMatch,
+} from './tournament';
 import { clamp, formatMoney } from './util';
 import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from './rng';
 import { snapshotStats, diffStats, type StatDelta } from './diff';
@@ -106,7 +112,10 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     awards: [],
     majorAwards: [],
     consumables: [],
-    pendingMidSeasonChoice: null,
+
+    pendingTournamentInvite: null,
+    activeTournament: null,
+    playedTournamentThisSeason: false,
 
     history: [],
     seenClubNames: [],
@@ -191,6 +200,52 @@ export function resolveEventChoice(
   return { text: resultText, deltas };
 }
 
+// ---------------- Phase : invitation à un tournoi international ----------------
+
+// Appelé à la sortie de la pause de mi-saison : soit le joueur est appelé en sélection
+// pour un tournoi cette saison (proposition à l'écran), soit on enchaîne directement
+// sur la simulation de la saison en club.
+export function resolveMidSeasonToSeasonSim(state: PlayerState): void {
+  const position = getPosition(state.positionCode);
+  const invite = checkTournamentEligibility(state, position);
+  if (invite) {
+    state.pendingTournamentInvite = invite;
+    state.phase = 'tournament_invite';
+  } else {
+    state.phase = 'season_sim';
+  }
+}
+
+export function acceptTournamentInvite(state: PlayerState): void {
+  const invite = state.pendingTournamentInvite;
+  if (!invite) return;
+  startTournament(state, invite.tournamentName);
+}
+
+export function declineTournamentInvite(state: PlayerState): void {
+  state.pendingTournamentInvite = null;
+  state.seasonLog.push("Tu déclines l'appel en sélection pour te concentrer sur ton club et ta progression.");
+  state.phase = 'season_sim';
+}
+
+export function playTournamentStep(state: PlayerState): TournamentMatchResult {
+  const position = getPosition(state.positionCode);
+  const t = state.activeTournament;
+  if (!t) throw new Error('Aucun tournoi actif.');
+  const result = t.stage === 'groupes' ? playNextGroupMatch(state, position) : playKnockoutMatch(state, position);
+  if (t.stage === 'termine') {
+    state.seasonLog.push(
+      `${t.tournamentName} : ${t.finalStageLabel} — ${t.playerGoals} but${t.playerGoals > 1 ? 's' : ''}, ${t.playerAssists} passe${t.playerAssists > 1 ? 's' : ''} décisive${t.playerAssists > 1 ? 's' : ''}.`,
+    );
+  }
+  return result;
+}
+
+export function continueAfterTournament(state: PlayerState): void {
+  state.activeTournament = null;
+  state.phase = 'season_sim';
+}
+
 // ---------------- Phase : simulation de la saison ----------------
 
 export function runSeasonSim(state: PlayerState): void {
@@ -239,6 +294,7 @@ export function acceptOffer(state: PlayerState, offerIndex: number): void {
     tierIndex: offer.tierIndex,
     countryCode: offer.countryCode,
     releaseClause: offer.releaseClause,
+    divisionLevel: offer.divisionLevel,
   };
   state.wage = offer.wage;
   state.marketValue = Math.max(state.marketValue, Math.round(offer.wage * 3.2));
@@ -261,7 +317,7 @@ export function negotiateOffer(state: PlayerState, offerIndex: number, aspect: N
   if (offer.negotiated) return 'Tu as déjà négocié avec ce club ce marché-ci.';
 
   const agent = getAgent(state.agentId);
-  const clubTier = getClubTier(offer.tierIndex);
+  const clubTier = resolveClubTier(offer);
   const leverage = clamp((state.reputation - clubTier.prestige) / 100 + (agent.offerQualityModifier - 1) * 0.4, -0.3, 0.5);
   const successChance = clamp(0.45 + leverage, 0.12, 0.85);
   offer.negotiated = true;
@@ -301,6 +357,7 @@ export function finalizeSeasonEnd(state: PlayerState): { forcedRetirement: boole
   state.season += 1;
   state.form = clamp(Math.round(50 + (state.morale - 50) * 0.35 + (nextFloat(state) - 0.5) * 22), 10, 95);
   state.fitness = clamp(state.fitness + nextInt(state, -3, 14), 25, 100);
+  state.playedTournamentThisSeason = false;
 
   const agent = getAgent(state.agentId);
   const scoutingBonus = state.advantageEffects.scouting ?? 0;

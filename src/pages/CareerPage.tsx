@@ -5,6 +5,8 @@ import ClubStatusBar from '../components/career/ClubStatusBar';
 import TransferWindowPanel from '../components/career/TransferWindowPanel';
 import PreseasonPanel from '../components/career/PreseasonPanel';
 import EventPanel from '../components/career/EventPanel';
+import TournamentInvitePanel from '../components/career/TournamentInvitePanel';
+import TournamentPanel from '../components/career/TournamentPanel';
 import SeasonSimPanel from '../components/career/SeasonSimPanel';
 import SeasonEndPanel from '../components/career/SeasonEndPanel';
 import CareerRecap from '../components/end/CareerRecap';
@@ -29,6 +31,8 @@ export default function CareerPage() {
       {career.phase === 'transfer_window' && <TransferWindowPanel career={career} />}
       {career.phase === 'preseason' && <PreseasonPanel career={career} />}
       {(career.phase === 'event' || career.phase === 'mid_season') && <EventPanel career={career} />}
+      {career.phase === 'tournament_invite' && <TournamentInvitePanel career={career} />}
+      {career.phase === 'tournament' && <TournamentPanel career={career} />}
       {career.phase === 'season_sim' && <SeasonSimPanel career={career} />}
       {career.phase === 'season_end' && <SeasonEndPanel career={career} />}
     </div>

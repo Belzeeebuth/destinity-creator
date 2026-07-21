@@ -7,16 +7,6 @@ export const TEAM_OF_YEAR_AWARD = 'Équipe-type mondiale de la saison';
 export const GLOBAL_TOURNAMENT_NAME = 'Coupe Intercontinentale';
 export const CONTINENTAL_TOURNAMENT_NAME = 'Championnat Continental';
 
-export const TOURNAMENT_STAGE_LABELS = {
-  groupes: 'Éliminé en phase de groupes',
-  quarts: 'Éliminé en quarts de finale',
-  demies: 'Éliminé en demi-finale',
-  finale: 'Finaliste',
-  vainqueur: 'Vainqueur',
-} as const;
-
-export type TournamentStage = keyof typeof TOURNAMENT_STAGE_LABELS;
-
 export interface InjuryType {
   id: string;
   label: string;

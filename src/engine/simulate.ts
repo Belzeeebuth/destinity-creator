@@ -1,19 +1,12 @@
 import type { PlayerState, SeasonRecord, TransferOffer } from './types';
 import { overallRating } from './types';
-import type { Country, CountryTier } from '../data/countries';
+import type { Country } from '../data/countries';
 import type { Position } from '../data/positions';
 import { getAgent } from '../data/agents';
-import { CLUB_TIERS, getClubTier } from '../data/clubs';
+import { CLUB_TIERS, resolveClubTier } from '../data/clubs';
 import { pickRealClub } from '../data/realClubs';
-import {
-  INJURY_TYPES,
-  WORLD_PLAYER_AWARD,
-  TOP_SCORER_AWARD,
-  TEAM_OF_YEAR_AWARD,
-  GLOBAL_TOURNAMENT_NAME,
-  CONTINENTAL_TOURNAMENT_NAME,
-  TOURNAMENT_STAGE_LABELS,
-} from '../data/awards';
+import { hasLeagueSystem, weightedDivisionLevel, pickClubFromDivision, maxDivisionLevel, divisionAt } from '../data/leagues';
+import { INJURY_TYPES, WORLD_PLAYER_AWARD, TOP_SCORER_AWARD, TEAM_OF_YEAR_AWARD } from '../data/awards';
 import { nextFloat, nextInt, nextChance, nextWeightedPick, rngFromCarrier } from './rng';
 import { clamp, adjustReputation, adjustFitness, adjustMorale, adjustAttribute, formatMoney } from './util';
 
@@ -35,39 +28,69 @@ export function generateOffers(
   const overall = computeOverall(state, position);
   const score = overall * 0.65 + country.leagueStrength * 3.2 + state.reputation * 0.25 + (country.scouting - 5) * 2;
   const biasedScore = score * (agent.offerQualityModifier + scoutingBonus);
-
-  const sigma = 14;
-  const weighted = CLUB_TIERS.map((t) => {
-    const diff = biasedScore - t.prestige;
-    const w = Math.exp(-(diff * diff) / (2 * sigma * sigma)) * (t.index === 0 ? 0.15 : 1);
-    return { tier: t, weight: w };
-  });
-
   const effectiveCount = Math.max(1, Math.round(count * (agent.offerFrequencyModifier + scoutingBonus)));
   const offers: TransferOffer[] = [];
-  for (let i = 0; i < effectiveCount; i++) {
-    const total = weighted.reduce((s, w) => s + w.weight, 0);
-    let r = nextFloat(state) * total;
-    let picked = weighted[weighted.length - 1].tier;
-    for (const w of weighted) {
-      r -= w.weight;
-      if (r <= 0) { picked = w.tier; break; }
+
+  if (hasLeagueSystem(country.code)) {
+    // Pays à pyramide réelle : les offres restent crédibles par rapport à la division
+    // actuelle (pas de saut direct de l'amateur à l'élite), avec de vrais noms de division.
+    const bottomLevel = maxDivisionLevel(country.code);
+    const currentLevel = state.club && state.club.countryCode === country.code && state.club.divisionLevel
+      ? state.club.divisionLevel
+      : bottomLevel;
+
+    for (let i = 0; i < effectiveCount; i++) {
+      const level = weightedDivisionLevel(country.code, currentLevel, biasedScore, () => nextFloat(state));
+      const tier = resolveClubTier({ tierIndex: 0, countryCode: country.code, divisionLevel: level });
+      const variance = 0.75 + nextFloat(state) * 0.6;
+      const wage = Math.round(tier.wageBase * variance * (0.6 + state.reputation / 130) * (1 + wageBoost));
+      const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
+      const roleRoll = nextFloat(state);
+      const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
+      const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
+      offers.push({
+        clubName: pickClubFromDivision(country.code, level, rngFromCarrier(state), avoid),
+        tierIndex: clamp(6 - level, 1, 5),
+        divisionLevel: level,
+        countryCode: country.code,
+        wage,
+        signingBonus,
+        role,
+      });
     }
-    const variance = 0.75 + nextFloat(state) * 0.6;
-    const wage = Math.round(picked.wageBase * variance * (0.6 + state.reputation / 130) * (1 + wageBoost));
-    const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
-    const roleRoll = nextFloat(state);
-    const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
-    const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
-    offers.push({
-      clubName: pickRealClub(country.code, picked.index, rngFromCarrier(state), avoid),
-      tierIndex: picked.index,
-      countryCode: country.code,
-      wage,
-      signingBonus,
-      role,
+  } else {
+    const sigma = 14;
+    const weighted = CLUB_TIERS.map((t) => {
+      const diff = biasedScore - t.prestige;
+      const w = Math.exp(-(diff * diff) / (2 * sigma * sigma)) * (t.index === 0 ? 0.15 : 1);
+      return { tier: t, weight: w };
     });
+
+    for (let i = 0; i < effectiveCount; i++) {
+      const total = weighted.reduce((s, w) => s + w.weight, 0);
+      let r = nextFloat(state) * total;
+      let picked = weighted[weighted.length - 1].tier;
+      for (const w of weighted) {
+        r -= w.weight;
+        if (r <= 0) { picked = w.tier; break; }
+      }
+      const variance = 0.75 + nextFloat(state) * 0.6;
+      const wage = Math.round(picked.wageBase * variance * (0.6 + state.reputation / 130) * (1 + wageBoost));
+      const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
+      const roleRoll = nextFloat(state);
+      const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
+      const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
+      offers.push({
+        clubName: pickRealClub(country.code, picked.index, rngFromCarrier(state), avoid),
+        tierIndex: picked.index,
+        countryCode: country.code,
+        wage,
+        signingBonus,
+        role,
+      });
+    }
   }
+
   // dédoublonne les noms de club générés dans le même lot
   const seen = new Set<string>();
   const deduped = offers.filter((o) => (seen.has(o.clubName) ? false : (seen.add(o.clubName), true)));
@@ -90,7 +113,7 @@ const SEASON_LENGTH = 34;
 export function simulateSeason(state: PlayerState, country: Country, position: Position): SeasonSimResult {
   const narrative: string[] = [];
   const overall = computeOverall(state, position);
-  const clubTier = state.club ? getClubTier(state.club.tierIndex) : getClubTier(0);
+  const clubTier = resolveClubTier(state.club);
 
   if (!state.club) {
     narrative.push("Sans club cette saison : tu t'entraînes en amateur et multiplies les essais.");
@@ -186,13 +209,13 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
     narrative.push(`Sacre collectif : ${trophyName} avec ${state.club.name} !`);
   }
 
+  // Montée / descente de division en fin de saison (pays à pyramide réelle uniquement).
+  const promotionNarrative = resolvePromotionRelegation(state, overall, avgRating);
+  narrative.push(...promotionNarrative);
+
   // Sélection nationale.
   const capsResult = simulateNationalTeam(state, country, overall);
   narrative.push(...capsResult.narrative);
-
-  // Tournoi international tous les 4 ans (alterné mondial / continental).
-  const tournamentNarrative = simulateInternationalTournament(state, country, overall);
-  narrative.push(...tournamentNarrative);
 
   // Distinctions individuelles majeures.
   const majorAwards = rollIndividualAwards(state, position, { goals, avgRating, cleanSheets, wonTrophy: trophies.length > 0 });
@@ -219,6 +242,7 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
     age: state.age,
     clubName: state.club.name,
     clubTierIndex: state.club.tierIndex,
+    divisionName: clubTier.label,
     countryCode: state.club.countryCode,
     appearances,
     goals,
@@ -249,6 +273,7 @@ function emptySeasonRecord(state: PlayerState): SeasonRecord {
     age: state.age,
     clubName: 'Sans club',
     clubTierIndex: 0,
+    divisionName: 'Libre',
     countryCode: state.countryCode,
     appearances: 0,
     goals: 0,
@@ -268,6 +293,56 @@ function emptySeasonRecord(state: PlayerState): SeasonRecord {
     cardsRed: 0,
     narrative: [],
   };
+}
+
+// ---------------- Montée / descente de division ----------------
+
+const LEAGUE_TABLE_SIZE = 18;
+
+function resolvePromotionRelegation(state: PlayerState, overall: number, avgRating: number): string[] {
+  const narrative: string[] = [];
+  const club = state.club;
+  if (!club || !club.divisionLevel || !hasLeagueSystem(club.countryCode)) return narrative;
+
+  const level = club.divisionLevel;
+  const division = divisionAt(club.countryCode, level);
+  if (!division) return narrative;
+  const maxLevel = maxDivisionLevel(club.countryCode);
+
+  // Score de forme de l'équipe cette saison : contribution du joueur + aléa (les 10 autres
+  // titulaires ne sont pas simulés individuellement, on abstrait leur influence via le tirage).
+  const teamFormScore = overall * 0.5 + (avgRating - 6.5) * 15 + (nextFloat(state) - 0.5) * 45;
+  const normalized = clamp(0.55 - teamFormScore / 220, 0.02, 0.98);
+  const finalPosition = Math.max(1, Math.min(LEAGUE_TABLE_SIZE, Math.round(normalized * LEAGUE_TABLE_SIZE)));
+
+  const promotionSpots = level > 1 ? 2 : 0;
+  const relegationSpots = level < maxLevel ? 3 : 0;
+
+  if (finalPosition <= promotionSpots) {
+    const newLevel = level - 1;
+    const newDivision = divisionAt(club.countryCode, newLevel);
+    if (newDivision) {
+      club.divisionLevel = newLevel;
+      club.tierIndex = clamp(6 - newLevel, 1, 5);
+      state.wage = Math.round(state.wage * clamp(newDivision.wageBase / division.wageBase, 0.5, 3));
+      adjustReputation(state, 6);
+      narrative.push(`Ton équipe termine ${finalPosition}${finalPosition === 1 ? 're' : 'e'} de ${division.name} : promotion en ${newDivision.name} !`);
+    }
+  } else if (finalPosition > LEAGUE_TABLE_SIZE - relegationSpots) {
+    const newLevel = level + 1;
+    const newDivision = divisionAt(club.countryCode, newLevel);
+    if (newDivision) {
+      club.divisionLevel = newLevel;
+      club.tierIndex = clamp(6 - newLevel, 1, 5);
+      state.wage = Math.round(state.wage * clamp(newDivision.wageBase / division.wageBase, 0.3, 1));
+      adjustReputation(state, -4);
+      narrative.push(`Ton équipe termine ${finalPosition}e de ${division.name} : relégation en ${newDivision.name}...`);
+    }
+  } else {
+    narrative.push(`Ton équipe termine ${finalPosition}e de ${division.name} cette saison.`);
+  }
+
+  return narrative;
 }
 
 interface NationalTeamResult {
@@ -308,40 +383,6 @@ function simulateNationalTeam(state: PlayerState, country: Country, overall: num
 
 function isMicro(country: Country): boolean {
   return country.population === 'micro';
-}
-
-// ---------------- Tournoi international (tous les 4 ans, mondial / continental en alternance) ----------------
-
-const TIER_STRENGTH: Record<CountryTier, number> = { S: 9, A: 7, B: 5, C: 3, D: 1 };
-
-function simulateInternationalTournament(state: PlayerState, country: Country, overall: number): string[] {
-  const narrative: string[] = [];
-  if (state.caps === 0) return narrative;
-
-  const cycle = state.season % 4;
-  let tournamentName: string | null = null;
-  if (cycle === 0) tournamentName = GLOBAL_TOURNAMENT_NAME;
-  else if (cycle === 2) tournamentName = CONTINENTAL_TOURNAMENT_NAME;
-  if (!tournamentName) return narrative;
-
-  const selectionChance = clamp(0.2 + state.reputation / 150 + country.nationalTeamAccess / 20, 0.05, 0.95);
-  if (!nextChance(state, selectionChance)) return narrative;
-
-  const teamStrength = TIER_STRENGTH[country.tier];
-  const personalBoost = (overall - 50) / 25 + state.reputation / 100;
-  const tournamentScore = teamStrength + personalBoost * 3 + nextFloat(state) * 4;
-
-  const stage: keyof typeof TOURNAMENT_STAGE_LABELS =
-    tournamentScore < 4 ? 'groupes' : tournamentScore < 7 ? 'quarts' : tournamentScore < 9 ? 'demies' : tournamentScore < 11.5 ? 'finale' : 'vainqueur';
-
-  narrative.push(`${tournamentName} avec la sélection : ${TOURNAMENT_STAGE_LABELS[stage]}.`);
-  adjustReputation(state, stage === 'vainqueur' ? 14 : stage === 'finale' ? 9 : stage === 'demies' ? 5 : 2);
-
-  if (stage === 'vainqueur') {
-    state.trophies.push(`${tournamentName} — saison ${state.season} (sélection nationale)`);
-  }
-
-  return narrative;
 }
 
 // ---------------- Distinctions individuelles majeures ----------------

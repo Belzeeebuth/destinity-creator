@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PlayerState, EventChoiceOutcome } from '../engine/types';
+import type { PlayerState, EventChoiceOutcome, TournamentMatchResult } from '../engine/types';
 import type { AttributeKey } from '../data/positions';
 import * as CareerEngine from '../engine/career';
 import type { CreateCareerInput } from '../engine/career';
@@ -60,6 +60,7 @@ interface GameStore {
   lastEventResult: string | null;
   lastEventDeltas: StatDelta[];
   lastNegotiationResult: string | null;
+  lastTournamentMatch: TournamentMatchResult | null;
   meta: MetaProfile;
   careerEndSummary: CareerEndSummary | null;
 
@@ -67,6 +68,11 @@ interface GameStore {
   chooseFocus: (attr: AttributeKey) => void;
   pickEventChoice: (index: number) => void;
   continueAfterEvent: () => void;
+  acceptTournamentInvite: () => void;
+  declineTournamentInvite: () => void;
+  playTournamentStep: () => void;
+  acknowledgeTournamentMatch: () => void;
+  continueAfterTournament: () => void;
   runSeasonSim: () => void;
   acceptOffer: (index: number) => void;
   declineOffers: () => void;
@@ -88,6 +94,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastEventResult: null,
   lastEventDeltas: [],
   lastNegotiationResult: null,
+  lastTournamentMatch: null,
   meta: loadMeta(),
   careerEndSummary: null,
 
@@ -103,6 +110,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastEventResult: null,
       lastEventDeltas: [],
       lastNegotiationResult: null,
+      lastTournamentMatch: null,
       careerEndSummary: null,
       meta: nextMeta,
     });
@@ -128,9 +136,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { career } = get();
     if (!career) return;
     if (career.phase === 'mid_season') {
-      // La pause de mi-saison vient d'être résolue : place à la simulation complète.
-      career.phase = 'season_sim';
+      // La pause de mi-saison vient d'être résolue : soit une sélection nationale appelle
+      // le joueur pour un tournoi, soit on enchaîne directement sur la saison en club.
       career.pendingEvent = null;
+      CareerEngine.resolveMidSeasonToSeasonSim(career);
       saveCareer(career);
       set({ career: { ...career }, activeEventChoices: null, lastEventResult: null, lastEventDeltas: [] });
       return;
@@ -138,6 +147,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const choices = CareerEngine.drawNextEvent(career);
     saveCareer(career);
     set({ career: { ...career }, activeEventChoices: choices, lastEventResult: null, lastEventDeltas: [] });
+  },
+
+  acceptTournamentInvite: () => {
+    const { career } = get();
+    if (!career) return;
+    CareerEngine.acceptTournamentInvite(career);
+    saveCareer(career);
+    set({ career: { ...career }, lastTournamentMatch: null });
+  },
+
+  declineTournamentInvite: () => {
+    const { career } = get();
+    if (!career) return;
+    CareerEngine.declineTournamentInvite(career);
+    saveCareer(career);
+    set({ career: { ...career } });
+  },
+
+  playTournamentStep: () => {
+    const { career } = get();
+    if (!career) return;
+    const result = CareerEngine.playTournamentStep(career);
+    saveCareer(career);
+    set({ career: { ...career }, lastTournamentMatch: result });
+  },
+
+  acknowledgeTournamentMatch: () => {
+    set({ lastTournamentMatch: null });
+  },
+
+  continueAfterTournament: () => {
+    const { career } = get();
+    if (!career) return;
+    CareerEngine.continueAfterTournament(career);
+    saveCareer(career);
+    set({ career: { ...career }, lastTournamentMatch: null });
   },
 
   runSeasonSim: () => {
@@ -192,7 +237,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   abandonCareer: () => {
     saveCareer(null);
-    set({ career: null, activeEventChoices: null, lastEventResult: null, lastEventDeltas: [], lastNegotiationResult: null, careerEndSummary: null });
+    set({
+      career: null,
+      activeEventChoices: null,
+      lastEventResult: null,
+      lastEventDeltas: [],
+      lastNegotiationResult: null,
+      lastTournamentMatch: null,
+      careerEndSummary: null,
+    });
   },
 
   finalizeCareerEnd: () => {

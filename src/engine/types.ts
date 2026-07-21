@@ -9,6 +9,7 @@ export interface SeasonRecord {
   age: number;
   clubName: string;
   clubTierIndex: number;
+  divisionName: string; // vrai nom de division si connu, sinon libellé générique du palier
   countryCode: string;
   appearances: number;
   goals: number;
@@ -39,12 +40,15 @@ export interface TransferOffer {
   role: 'titulaire' | 'rotation' | 'reserviste';
   releaseClause?: number;
   negotiated?: boolean;
+  divisionLevel?: number; // niveau réel dans la pyramide du pays, si connue (1 = sommet)
 }
 
 export type CareerPhase =
   | 'preseason'
   | 'event'
   | 'mid_season'
+  | 'tournament_invite'
+  | 'tournament'
   | 'season_sim'
   | 'transfer_window'
   | 'season_end'
@@ -78,6 +82,73 @@ export interface PendingEvent {
   title: string;
   text: string;
   choices: { label: string }[];
+}
+
+// ---------------- Tournoi international détaillé ----------------
+
+export type TournamentStageKey =
+  | 'groupes'
+  | 'huitiemes'
+  | 'quarts'
+  | 'demies'
+  | 'petite_finale'
+  | 'finale'
+  | 'termine';
+
+export interface PendingTournamentInvite {
+  tournamentName: string;
+}
+
+export interface TournamentTeamStanding {
+  countryCode: string;
+  countryName: string;
+  isPlayerTeam: boolean;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  points: number;
+}
+
+export interface TournamentMatchResult {
+  roundLabel: string;
+  opponentCountryCode: string;
+  opponentCountryName: string;
+  scoreFor: number;
+  scoreAgainst: number;
+  wonOnPenalties?: boolean;
+  playerGoals: number;
+  playerAssists: number;
+  playerRating: number;
+  narrative: string;
+}
+
+export interface TournamentRivalStat {
+  name: string;
+  countryCode: string;
+  countryName: string;
+  goals: number;
+  assists: number;
+  avgRating: number;
+}
+
+export interface TournamentState {
+  tournamentName: string;
+  stage: TournamentStageKey;
+  groupOpponents: string[]; // codes pays, 3 adversaires de poule
+  groupMatchIndex: number; // 0-2, prochain match de poule à disputer
+  groupTable: TournamentTeamStanding[];
+  matches: TournamentMatchResult[]; // historique complet, dans l'ordre chronologique
+  eliminated: boolean;
+  champion: boolean;
+  finalStageLabel: string;
+  playerGoals: number;
+  playerAssists: number;
+  playerRatings: number[];
+  rivals: TournamentRivalStat[];
+  faced: string[]; // codes pays déjà affrontés (poule + élimination directe), pour éviter les doublons
 }
 
 export interface PlayerState {
@@ -127,7 +198,10 @@ export interface PlayerState {
   awards: string[];
   majorAwards: string[]; // distinctions individuelles majeures remportées (meilleur joueur, meilleur buteur...)
   consumables: string[]; // objets consommables de la boutique actuellement détenus
-  pendingMidSeasonChoice: { title: string; text: string; choices: { label: string }[] } | null;
+
+  pendingTournamentInvite: PendingTournamentInvite | null;
+  activeTournament: TournamentState | null;
+  playedTournamentThisSeason: boolean;
 
   history: SeasonRecord[];
   seenClubNames: string[]; // clubs déjà proposés ou fréquentés, pour ne pas les reproposer après un refus

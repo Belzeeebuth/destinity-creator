@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { PlayerState } from '../../engine/types';
-import { getClubTier } from '../../data/clubs';
+import { resolveClubTier } from '../../data/clubs';
 import { getCountry } from '../../data/countries';
 import { formatMoney } from '../../engine/util';
 import { useGameStore } from '../../state/store';
@@ -36,7 +36,7 @@ export default function TransferWindowPanel({ career }: { career: PlayerState })
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {career.pendingOffers.map((offer, i) => {
-          const tier = getClubTier(offer.tierIndex);
+          const tier = resolveClubTier(offer);
           const country = getCountry(offer.countryCode);
           const negotiating = negotiatingIndex === i;
           return (

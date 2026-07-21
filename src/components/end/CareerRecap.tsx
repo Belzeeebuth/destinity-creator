@@ -152,6 +152,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
                   <th className="pb-2">Saison</th>
                   <th className="pb-2">Âge</th>
                   <th className="pb-2">Club</th>
+                  <th className="pb-2">Division</th>
                   <th className="pb-2">Matchs</th>
                   {isGK ? (
                     <>
@@ -174,6 +175,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
                     <td className="py-1.5">{h.season}</td>
                     <td className="py-1.5">{h.age}</td>
                     <td className="py-1.5">{h.clubName}</td>
+                    <td className="py-1.5 text-ink-500">{h.divisionName}</td>
                     <td className="py-1.5">{h.appearances}</td>
                     {isGK ? (
                       <>

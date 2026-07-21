@@ -77,6 +77,7 @@ export default function PantheonPage() {
                               <th className="pb-1.5">Saison</th>
                               <th className="pb-1.5">Âge</th>
                               <th className="pb-1.5">Club</th>
+                              <th className="pb-1.5">Division</th>
                               <th className="pb-1.5">Matchs</th>
                               {isGK ? (
                                 <>
@@ -98,6 +99,7 @@ export default function PantheonPage() {
                                 <td className="py-1">{h.season}</td>
                                 <td className="py-1">{h.age}</td>
                                 <td className="py-1">{h.clubName}</td>
+                                <td className="py-1 text-ink-500">{h.divisionName}</td>
                                 <td className="py-1">{h.appearances}</td>
                                 {isGK ? (
                                   <>
