@@ -1,6 +1,3 @@
-import type { Rng } from '../engine/rng';
-import { pick } from '../engine/rng';
-
 export interface ClubTier {
   index: number; // 0 = sans club .. 5 = élite mondiale
   label: string;
@@ -17,38 +14,6 @@ export const CLUB_TIERS: ClubTier[] = [
   { index: 4, label: 'Grand club national', description: 'Haut de tableau, coupes continentales.', wageBase: 500000, prestige: 65 },
   { index: 5, label: 'Club d’élite mondiale', description: 'Sommet du football mondial, projecteurs braqués.', wageBase: 3000000, prestige: 90 },
 ];
-
-const CITY_ROOTS = [
-  'Val', 'Mont', 'Port', 'Saint', 'Nova', 'Rio', 'Costa', 'Alto', 'Belle', 'Fort',
-  'San', 'Nord', 'Sud', 'Grand', 'Cabo', 'Lago', 'Serra', 'Baie', 'Campo', 'Isla',
-];
-const CITY_SUFFIXES = [
-  'ville', 'port', 'field', 'burgo', 'stad', 'grande', 'nova', 'wick', 'thorpe', 'dor',
-  'mar', 'bosco', 'monte', 'rio', 'land', 'ora', 'ense', 'inha', 'ez', 'ington',
-];
-
-export function generateCityName(rng: Rng): string {
-  const root = pick(rng, CITY_ROOTS);
-  const suffix = pick(rng, CITY_SUFFIXES);
-  return `${root}${suffix}`;
-}
-
-const CLUB_TEMPLATES = [
-  'FC {city}', '{city} FC', 'Racing {city}', 'Olympique {city}', '{city} United',
-  '{city} Athletic', 'AS {city}', 'Real {city}', 'Sporting {city}', '{city} City',
-  'Dynamo {city}', '{city} Rovers', 'Étoile de {city}', 'Union {city}', '{city} Wanderers',
-];
-
-export function generateClubName(rng: Rng, avoid: string[] = []): string {
-  let name = '';
-  for (let attempt = 0; attempt < 8; attempt++) {
-    const city = generateCityName(rng);
-    const template = pick(rng, CLUB_TEMPLATES);
-    name = template.replace('{city}', city);
-    if (!avoid.includes(name)) return name;
-  }
-  return name;
-}
 
 export interface ClubRef {
   name: string;

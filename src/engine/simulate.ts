@@ -3,7 +3,8 @@ import { overallRating } from './types';
 import type { Country, CountryTier } from '../data/countries';
 import type { Position } from '../data/positions';
 import { getAgent } from '../data/agents';
-import { CLUB_TIERS, generateClubName, getClubTier } from '../data/clubs';
+import { CLUB_TIERS, getClubTier } from '../data/clubs';
+import { pickRealClub } from '../data/realClubs';
 import {
   INJURY_TYPES,
   WORLD_PLAYER_AWARD,
@@ -59,7 +60,7 @@ export function generateOffers(
     const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
     const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
     offers.push({
-      clubName: generateClubName(rngFromCarrier(state), avoid),
+      clubName: pickRealClub(country.code, picked.index, rngFromCarrier(state), avoid),
       tierIndex: picked.index,
       countryCode: country.code,
       wage,

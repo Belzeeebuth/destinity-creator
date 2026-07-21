@@ -2,8 +2,9 @@
 
 Un simulateur de carrière de footballeur, saison après saison, jouable entièrement dans le
 navigateur. Recréation originale et indépendante inspirée du concept de jeux du même genre :
-aucun contenu, texte ou asset propriétaire n'est repris — mécaniques, textes et illustrations
-sont une implémentation maison.
+mécaniques, textes et interface sont une implémentation maison. Les clubs proposés portent
+de vrais noms (informations publiques et factuelles), mais aucun logo, blason ni charte
+graphique officielle n'est utilisé.
 
 ## Concept
 
