@@ -15,6 +15,7 @@ import { getBackground } from './backgrounds';
 import { getLifestyle } from './lifestyles';
 import { getAgent } from './agents';
 import { randomName } from './names';
+import { MATCH_MOMENT_EVENTS } from './matchMoments';
 import type { CountryTier } from './countries';
 
 function shielded(state: PlayerState, baseProbability: number): boolean {
@@ -1298,6 +1299,7 @@ const EVENTS: EventTemplate[] = [
       ],
     }),
   },
+  ...MATCH_MOMENT_EVENTS,
 ];
 
 export function allEventTemplates(): EventTemplate[] {
