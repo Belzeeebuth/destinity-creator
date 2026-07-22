@@ -1,17 +1,47 @@
-import type { InvestmentId, PlayerState } from './types';
+import type { InvestmentId, MarketAssetProfile, PlayerState } from './types';
 import { INVESTMENTS, getInvestmentDefinition } from '../data/investments';
 import { nextFloat, nextChance } from './rng';
 import { clamp, adjustMorale, formatMoney } from './util';
 
+// Tire le profil de risque/rendement effectif de chaque actif POUR CETTE CARRIÈRE, à partir de ses
+// valeurs de base, en appliquant un facteur aléatoire propre à la partie (sauf le livret, garanti) :
+// un même actif ne se comporte donc jamais exactement pareil d'une carrière à l'autre.
+export function generateMarketProfile(state: PlayerState): Record<InvestmentId, MarketAssetProfile> {
+  const profile = {} as Record<InvestmentId, MarketAssetProfile>;
+  fillMissingMarketProfile(state, profile);
+  return profile;
+}
+
+// Complète un profil de marché existant avec les actifs qui lui manquent (nouvelle carrière vierge,
+// ou sauvegarde plus ancienne créée avant l'ajout de nouveaux actifs au catalogue).
+export function fillMissingMarketProfile(state: PlayerState, profile: Record<InvestmentId, MarketAssetProfile>): void {
+  for (const def of INVESTMENTS) {
+    if (profile[def.id]) continue;
+    if (!def.randomized) {
+      profile[def.id] = { volatility: def.baseVolatility, meanReturn: def.baseMeanReturn, crashChance: def.baseCrashChance };
+      continue;
+    }
+    const volatilityMult = 0.55 + nextFloat(state) * 0.9; // 0.55x à 1.45x la valeur de base
+    const returnMult = 0.4 + nextFloat(state) * 1.3; // 0.4x à 1.7x la valeur de base
+    const crashMult = 0.5 + nextFloat(state) * 1.2; // 0.5x à 1.7x la valeur de base
+    profile[def.id] = {
+      volatility: clamp(def.baseVolatility * volatilityMult, 0, 1.3),
+      meanReturn: def.baseMeanReturn * returnMult,
+      crashChance: clamp(def.baseCrashChance * crashMult, 0, 0.65),
+    };
+  }
+}
+
 // Fait évoluer chaque position détenue d'une saison sur l'autre (rendement moyen +/- volatilité,
-// avec un risque de choc négatif additionnel propre à chaque classe d'actif).
+// avec un risque de choc négatif additionnel propre à chaque classe d'actif et à cette carrière).
 export function evolveInvestments(state: PlayerState): string[] {
   const narrative: string[] = [];
   for (const def of INVESTMENTS) {
     const holding = state.investments[def.id];
     if (!holding || holding.value <= 0) continue;
-    let changePct = def.meanReturn + (nextFloat(state) - 0.5) * 2 * def.volatility;
-    if (def.crashChance > 0 && nextChance(state, def.crashChance)) {
+    const profile = state.marketProfile[def.id];
+    let changePct = profile.meanReturn + (nextFloat(state) - 0.5) * 2 * profile.volatility;
+    if (profile.crashChance > 0 && nextChance(state, profile.crashChance)) {
       changePct -= 0.25 + nextFloat(state) * 0.35;
     }
     const before = holding.value;
@@ -24,6 +54,16 @@ export function evolveInvestments(state: PlayerState): string[] {
     }
   }
   return narrative;
+}
+
+// Étiquette de risque lisible, calculée depuis la volatilité EFFECTIVE de cette carrière (et non
+// une valeur générique), pour informer le joueur sans lui révéler les chiffres bruts du moteur.
+export function riskLabel(volatility: number): { label: string; color: string } {
+  if (volatility <= 0.02) return { label: 'Aucun risque', color: '#8fd0a6' };
+  if (volatility <= 0.12) return { label: 'Risque faible', color: '#8fd0a6' };
+  if (volatility <= 0.3) return { label: 'Risque modéré', color: '#e8b94a' };
+  if (volatility <= 0.55) return { label: 'Risque élevé', color: '#e48a8a' };
+  return { label: 'Risque extrême', color: '#e05a5a' };
 }
 
 export function investAmount(state: PlayerState, id: InvestmentId, amount: number): string {

@@ -19,7 +19,7 @@ import {
   playNextGroupMatch,
   playKnockoutMatch,
 } from './tournament';
-import { evolveInvestments } from './finance';
+import { evolveInvestments, generateMarketProfile } from './finance';
 import { clamp, formatMoney } from './util';
 import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from './rng';
 import { snapshotStats, diffStats, type StatDelta } from './diff';
@@ -121,6 +121,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
 
     savings: 0,
     investments: {},
+    marketProfile: {} as PlayerState['marketProfile'],
     relationship: { status: 'celibataire', partnerName: null, since: 1, happiness: 50 },
 
     history: [],
@@ -141,6 +142,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     seasonGrowthBoostValue: 0,
   };
 
+  state.marketProfile = generateMarketProfile(state);
   state.pendingOffers = generateOffers(state, country, position, 3);
   if (state.pendingOffers.length === 0) state.phase = 'preseason';
   return state;

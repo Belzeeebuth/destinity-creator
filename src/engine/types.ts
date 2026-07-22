@@ -88,22 +88,42 @@ export interface PendingEvent {
 
 export type InvestmentId =
   | 'livret'
+  | 'obligations'
+  | 'or'
   | 'immobilier'
   | 'actions'
+  | 'art'
+  | 'startups'
   | 'bitcoin'
   | 'ethereum'
   | 'solana'
   | 'bnb'
   | 'xrp'
-  | 'dogecoin'
   | 'cardano'
   | 'polkadot'
+  | 'dogecoin'
+  | 'litecoin'
+  | 'chainlink'
+  | 'avalanche'
+  | 'toncoin'
+  | 'tron'
+  | 'shiba_inu'
+  | 'pepe'
   | 'moonshiba';
 
 export interface InvestmentHolding {
   id: InvestmentId;
   principal: number; // total misé net des retraits, pour situer le gain/perte
   value: number; // valeur actuelle, fluctue chaque saison
+}
+
+// Profil de risque/rendement effectif d'un actif POUR CETTE CARRIÈRE : dérivé aléatoirement (via le
+// RNG seedé) des valeurs de base de l'actif à la création du personnage, pour que le marché ne soit
+// jamais identique d'une partie à l'autre.
+export interface MarketAssetProfile {
+  volatility: number;
+  meanReturn: number;
+  crashChance: number;
 }
 
 export type RelationshipStatus = 'celibataire' | 'en_couple' | 'marie';
@@ -245,6 +265,7 @@ export interface PlayerState {
 
   savings: number; // argent personnel liquide, distinct du salaire et de la valeur marchande
   investments: Partial<Record<InvestmentId, InvestmentHolding>>;
+  marketProfile: Record<InvestmentId, MarketAssetProfile>;
   relationship: RelationshipState;
 
   history: SeasonRecord[];

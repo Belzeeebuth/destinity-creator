@@ -24,7 +24,14 @@ import { evaluateBadges, BADGES } from '../data/badges';
 import { getCountry } from '../data/countries';
 import { getConsumable } from '../data/shop';
 import { adjustFitness, adjustMorale } from '../engine/util';
-import { investAmount, withdrawInvestment, giftFamily as giftFamilyEngine, giftPartner as giftPartnerEngine, type GiftTierId } from '../engine/finance';
+import {
+  investAmount,
+  withdrawInvestment,
+  giftFamily as giftFamilyEngine,
+  giftPartner as giftPartnerEngine,
+  fillMissingMarketProfile,
+  type GiftTierId,
+} from '../engine/finance';
 import type { StatDelta } from '../engine/diff';
 
 const CAREER_STORAGE_KEY = 'destiny11_career_v1';
@@ -39,6 +46,8 @@ function loadCareer(): PlayerState | null {
     parsed.firedOnceEventIds ??= [];
     parsed.savings ??= 0;
     parsed.investments ??= {};
+    parsed.marketProfile ??= {} as PlayerState['marketProfile'];
+    fillMissingMarketProfile(parsed, parsed.marketProfile);
     parsed.relationship ??= { status: 'celibataire', partnerName: null, since: parsed.season ?? 1, happiness: 50 };
     return parsed;
   } catch {

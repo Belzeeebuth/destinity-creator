@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../state/store';
 import { TRADITIONAL_INVESTMENTS, CRYPTO_INVESTMENTS, type InvestmentDefinition } from '../data/investments';
-import { GIFT_TIERS, type GiftTierId } from '../engine/finance';
+import { GIFT_TIERS, riskLabel, type GiftTierId } from '../engine/finance';
 import type { InvestmentId, PlayerState } from '../engine/types';
 import { formatMoney } from '../engine/util';
 
@@ -75,6 +75,7 @@ function TraditionalInvestmentsPanel({ career }: { career: PlayerState }) {
           const holding = career.investments[def.id];
           const gain = holding ? holding.value - holding.principal : 0;
           const gainPct = holding && holding.principal > 0 ? (gain / holding.principal) * 100 : 0;
+          const risk = riskLabel(career.marketProfile[def.id]?.volatility ?? def.baseVolatility);
           return (
             <div key={def.id} className="flex flex-col gap-2 rounded-lg border border-white/10 p-4">
               <div className="flex items-center justify-between">
@@ -82,6 +83,9 @@ function TraditionalInvestmentsPanel({ career }: { career: PlayerState }) {
                   {def.emoji} {def.name}
                 </span>
               </div>
+              <span className="w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${risk.color}22`, color: risk.color }}>
+                {risk.label}
+              </span>
               <p className="text-xs text-ink-400">{def.description}</p>
 
               {holding ? (
@@ -143,15 +147,17 @@ function CryptoPanel({ career }: { career: PlayerState }) {
     <div className="card p-5">
       <h2 className="font-display text-xl text-ink-100">🪙 Marché crypto</h2>
       <p className="mt-1 text-sm text-ink-300">
-        Neuf actifs distincts, du plus établi au plus spéculatif. Marché fictif entièrement simulé par le jeu — aucun cours
-        réel n'est répliqué.
+        {CRYPTO_INVESTMENTS.length} actifs distincts, du plus établi au plus spéculatif. Le niveau de risque de chacun est
+        propre à cette carrière : il change à chaque nouvelle partie. Marché fictif entièrement simulé par le jeu — aucun
+        cours réel n'est répliqué.
       </p>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[560px] text-left text-sm">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-ink-500">
             <tr>
               <th className="pb-2">Actif</th>
+              <th className="pb-2">Risque</th>
               <th className="pb-2">Position</th>
               <th className="pb-2">Performance</th>
               <th className="pb-2">Action</th>
@@ -163,6 +169,7 @@ function CryptoPanel({ career }: { career: PlayerState }) {
                 key={coin.id}
                 coin={coin}
                 holding={career.investments[coin.id]}
+                volatility={career.marketProfile[coin.id]?.volatility ?? coin.baseVolatility}
                 amount={amounts[coin.id] ?? ''}
                 onAmountChange={(v) => setAmounts((a) => ({ ...a, [coin.id]: v }))}
                 onInvest={() => invest(coin.id)}
@@ -181,6 +188,7 @@ function CryptoPanel({ career }: { career: PlayerState }) {
 function CryptoRow({
   coin,
   holding,
+  volatility,
   amount,
   onAmountChange,
   onInvest,
@@ -190,6 +198,7 @@ function CryptoRow({
 }: {
   coin: InvestmentDefinition;
   holding: PlayerState['investments'][InvestmentId];
+  volatility: number;
   amount: string;
   onAmountChange: (v: string) => void;
   onInvest: () => void;
@@ -199,6 +208,7 @@ function CryptoRow({
 }) {
   const gain = holding ? holding.value - holding.principal : 0;
   const gainPct = holding && holding.principal > 0 ? (gain / holding.principal) * 100 : 0;
+  const risk = riskLabel(volatility);
 
   return (
     <>
@@ -209,6 +219,11 @@ function CryptoRow({
             <span className="font-medium text-ink-100">{coin.name}</span>
             <span className="text-xs text-ink-500">{coin.symbol}</span>
           </button>
+        </td>
+        <td className="py-2">
+          <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ backgroundColor: `${risk.color}22`, color: risk.color }}>
+            {risk.label}
+          </span>
         </td>
         <td className="py-2">{holding ? formatMoney(holding.value) : '—'}</td>
         <td className="py-2">
@@ -247,7 +262,7 @@ function CryptoRow({
       </tr>
       {expanded && (
         <tr className="bg-white/5">
-          <td colSpan={4} className="px-2 py-2 text-xs text-ink-400">
+          <td colSpan={5} className="px-2 py-2 text-xs text-ink-400">
             {coin.description}
           </td>
         </tr>
