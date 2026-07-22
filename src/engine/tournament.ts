@@ -112,8 +112,11 @@ function simulateMatch(
   const opponent = getCountry(opponentCountryCode);
   const overall = computeOverall(state, position);
 
-  const playerTeamStrength = TIER_STRENGTH[playerCountry.tier] + overall / 14 + state.reputation / 30;
-  const opponentTeamStrength = TIER_STRENGTH[opponent.tier] + 3 + nextFloat(state) * 2.5;
+  // Le collectif (niveau de la nation) doit peser plus lourd qu'un seul joueur, aussi bon
+  // soit-il : un joueur "très bon" ne doit pas à lui seul transformer une petite nation en
+  // épouvantail qui rafle systématiquement la Coupe du Monde face à des cadors comme le Brésil.
+  const playerTeamStrength = TIER_STRENGTH[playerCountry.tier] * 1.3 + overall / 24 + state.reputation / 60;
+  const opponentTeamStrength = TIER_STRENGTH[opponent.tier] * 1.3 + 2 + nextFloat(state) * 4.5;
   const strengthDiff = clamp(playerTeamStrength - opponentTeamStrength, -8, 8);
 
   const expectedFor = clamp(1.3 + strengthDiff * 0.22, 0.2, 4.2);
