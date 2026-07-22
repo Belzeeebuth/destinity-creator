@@ -31,6 +31,7 @@ export function generateOffers(
   const biasedScore = score * (agent.offerQualityModifier + scoutingBonus);
   const effectiveCount = Math.max(1, Math.round(count * (agent.offerFrequencyModifier + scoutingBonus)));
   const offers: TransferOffer[] = [];
+  const currentClubName = state.club?.name ? [state.club.name] : [];
 
   if (hasLeagueSystem(country.code)) {
     // Pays à pyramide réelle : les offres restent crédibles par rapport à la division
@@ -48,7 +49,7 @@ export function generateOffers(
       const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
       const roleRoll = nextFloat(state);
       const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
-      const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
+      const avoid = [...state.seenClubNames, ...currentClubName, ...offers.map((o) => o.clubName)];
       offers.push({
         clubName: pickClubFromDivision(country.code, level, rngFromCarrier(state), avoid),
         tierIndex: clamp(6 - level, 1, 5),
@@ -80,7 +81,7 @@ export function generateOffers(
       const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
       const roleRoll = nextFloat(state);
       const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
-      const avoid = [...state.seenClubNames, ...offers.map((o) => o.clubName)];
+      const avoid = [...state.seenClubNames, ...currentClubName, ...offers.map((o) => o.clubName)];
       offers.push({
         clubName: pickRealClub(country.code, picked.index, rngFromCarrier(state), avoid),
         tierIndex: picked.index,
