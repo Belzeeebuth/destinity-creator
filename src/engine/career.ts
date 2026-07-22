@@ -19,6 +19,7 @@ import {
   playNextGroupMatch,
   playKnockoutMatch,
 } from './tournament';
+import { evolveInvestments } from './finance';
 import { clamp, formatMoney } from './util';
 import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from './rng';
 import { snapshotStats, diffStats, type StatDelta } from './diff';
@@ -117,6 +118,10 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     activeTournament: null,
     playedTournamentThisSeason: false,
     rival: null,
+
+    savings: 0,
+    investments: {},
+    relationship: { status: 'celibataire', partnerName: null, since: 1, happiness: 50 },
 
     history: [],
     seenClubNames: [],
@@ -255,6 +260,17 @@ export function runSeasonSim(state: PlayerState): void {
   const position = getPosition(state.positionCode);
   const { record, narrative } = simulateSeason(state, country, position);
   state.history.push(record);
+
+  // ---- Vie personnelle : épargne accumulée sur le salaire net, puis évolution du portefeuille ----
+  // (record.narrative et narrative sont le même tableau : un seul push suffit pour les deux.)
+  const agent = getAgent(state.agentId);
+  const netWage = Math.round(state.wage * (1 - agent.wageCommission / 100));
+  const savedThisSeason = Math.round(netWage * 0.55);
+  state.savings += savedThisSeason;
+  if (savedThisSeason > 0) {
+    narrative.push(`💶 ${formatMoney(savedThisSeason)} épargnés cette saison (épargne totale : ${formatMoney(state.savings)}).`);
+  }
+  narrative.push(...evolveInvestments(state));
   state.lastSeasonNarrative = narrative;
 
   // La progression/déclin des attributs est calculée ici (entraînement de la saison qui

@@ -1004,6 +1004,126 @@ const EVENTS: EventTemplate[] = [
       ],
     }),
   },
+
+  // ---------------- VIE PRIVÉE : RELATION AMOUREUSE ----------------
+  {
+    id: 'romance_meet_someone',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.relationship.status === 'celibataire' ? 6 : 0),
+    build: () => ({
+      title: 'Une rencontre inattendue',
+      text: "En dehors des terrains, tu croises quelqu'un qui capte immédiatement ton attention.",
+      choices: [
+        {
+          label: 'Se lancer, tenter sa chance',
+          apply: (s) => {
+            const generated = randomName(s.countryCode, rngFromCarrier(s));
+            const partnerName = `${generated.firstName} ${generated.lastName}`;
+            s.relationship = { status: 'en_couple', partnerName, since: s.season, happiness: 60 };
+            adjustMorale(s, 8);
+            return `Le courant passe tout de suite avec ${partnerName}. Une nouvelle page de ta vie personnelle s'ouvre. (+Moral)`;
+          },
+        },
+        {
+          label: 'Rester concentré sur ta carrière',
+          apply: (s) => { adjustDiscipline(s, 2); return 'Tu préfères ne rien précipiter pour le moment. (+Discipline)'; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'couple_quality_time',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.relationship.status !== 'celibataire' ? 7 : 0),
+    build: (s) => ({
+      title: `Moment à deux avec ${s.relationship.partnerName}`,
+      text: `Entre les matchs et les déplacements, ${s.relationship.partnerName} aimerait passer plus de temps avec toi.`,
+      choices: [
+        {
+          label: 'Organiser une escapade romantique',
+          apply: (s2) => {
+            const cost = Math.min(s2.savings, 2000);
+            s2.savings -= cost;
+            s2.relationship.happiness = clamp(s2.relationship.happiness + 10, 0, 100);
+            adjustMorale(s2, 5);
+            return `Une parenthèse à deux qui fait un bien fou à votre couple (-${formatMoney(cost)}, +Moral).`;
+          },
+        },
+        {
+          label: 'Rester concentré sur la saison',
+          apply: (s2) => {
+            s2.relationship.happiness = clamp(s2.relationship.happiness - 8, 0, 100);
+            return `${s2.relationship.partnerName} comprend, mais la distance commence à se faire sentir.`;
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'couple_conflict',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.relationship.status !== 'celibataire' && s.relationship.happiness < 40 ? 9 : 0),
+    build: (s) => ({
+      title: `Tension avec ${s.relationship.partnerName}`,
+      text: `Les disputes se multiplient avec ${s.relationship.partnerName} ces derniers temps.`,
+      choices: [
+        {
+          label: 'Prendre le temps de tout remettre à plat',
+          apply: (s2) => {
+            s2.relationship.happiness = clamp(s2.relationship.happiness + 20, 0, 100);
+            adjustMorale(s2, -2);
+            return 'Une discussion longue et nécessaire qui apaise les tensions, non sans un peu de fatigue émotionnelle. (-Moral)';
+          },
+        },
+        {
+          label: 'Laisser filer, trop occupé par le foot',
+          apply: (s2) => {
+            s2.relationship.happiness = clamp(s2.relationship.happiness - 15, 0, 100);
+            if (s2.relationship.happiness <= 5) {
+              const name = s2.relationship.partnerName;
+              const wasMarried = s2.relationship.status === 'marie';
+              s2.relationship = { status: 'celibataire', partnerName: null, since: s2.season, happiness: 50 };
+              adjustMorale(s2, -12);
+              return wasMarried
+                ? `Le divorce est acté avec ${name}. Une page difficile se tourne sur le plan personnel. (-Moral)`
+                : `La rupture est actée avec ${name}. Un vrai coup dur sur le plan personnel. (-Moral)`;
+            }
+            return 'Tu laisses la situation se dégrader, faute de temps à y consacrer.';
+          },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'proposal_moment',
+    minAge: 20,
+    maxAge: 45,
+    weight: (s) => (s.relationship.status === 'en_couple' && s.relationship.happiness >= 70 && s.season - s.relationship.since >= 2 ? 5 : 0),
+    build: (s) => ({
+      title: `Faire sa demande à ${s.relationship.partnerName} ?`,
+      text: `Après tout ce temps partagé, l'idée du mariage s'impose naturellement avec ${s.relationship.partnerName}.`,
+      choices: [
+        {
+          label: 'Faire sa demande',
+          apply: (s2) => {
+            const cost = Math.min(s2.savings, 15000);
+            s2.savings -= cost;
+            s2.relationship.status = 'marie';
+            s2.relationship.happiness = clamp(s2.relationship.happiness + 20, 0, 100);
+            adjustMorale(s2, 15);
+            return `Le grand oui ! Le mariage avec ${s2.relationship.partnerName} restera l'un des plus beaux jours de ta vie (-${formatMoney(cost)}, +Moral).`;
+          },
+        },
+        {
+          label: 'Attendre encore un peu',
+          apply: () => 'Rien ne presse : tu préfères laisser mûrir les choses.',
+        },
+      ],
+    }),
+  },
 ];
 
 export function allEventTemplates(): EventTemplate[] {

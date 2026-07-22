@@ -84,6 +84,25 @@ export interface PendingEvent {
   choices: { label: string }[];
 }
 
+// ---------------- Vie personnelle : patrimoine et relation ----------------
+
+export type InvestmentId = 'livret' | 'immobilier' | 'actions' | 'crypto';
+
+export interface InvestmentHolding {
+  id: InvestmentId;
+  principal: number; // total misé net des retraits, pour situer le gain/perte
+  value: number; // valeur actuelle, fluctue chaque saison
+}
+
+export type RelationshipStatus = 'celibataire' | 'en_couple' | 'marie';
+
+export interface RelationshipState {
+  status: RelationshipStatus;
+  partnerName: string | null;
+  since: number; // saison de début du statut actuel
+  happiness: number; // 0-100
+}
+
 // ---------------- Tournoi international détaillé ----------------
 
 export type TournamentStageKey =
@@ -211,6 +230,10 @@ export interface PlayerState {
   activeTournament: TournamentState | null;
   playedTournamentThisSeason: boolean;
   rival: LockerRoomRival | null;
+
+  savings: number; // argent personnel liquide, distinct du salaire et de la valeur marchande
+  investments: Partial<Record<InvestmentId, InvestmentHolding>>;
+  relationship: RelationshipState;
 
   history: SeasonRecord[];
   seenClubNames: string[]; // clubs déjà proposés ou fréquentés, pour ne pas les reproposer après un refus

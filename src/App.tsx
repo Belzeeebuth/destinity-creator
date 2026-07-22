@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import CreationPage from './pages/CreationPage';
 import CareerPage from './pages/CareerPage';
 import PantheonPage from './pages/PantheonPage';
+import PatrimoinePage from './pages/PatrimoinePage';
 import BoutiquePage from './pages/BoutiquePage';
 import BadgesPage from './pages/BadgesPage';
 import StoryModePage from './pages/StoryModePage';
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/creation" element={<CreationPage />} />
           <Route path="/carriere" element={<CareerPage />} />
+          <Route path="/patrimoine" element={<PatrimoinePage />} />
           <Route path="/pantheon" element={<PantheonPage />} />
           <Route path="/boutique" element={<BoutiquePage />} />
           <Route path="/badges" element={<BadgesPage />} />

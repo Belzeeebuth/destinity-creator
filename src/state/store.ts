@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { PlayerState, EventChoiceOutcome, TournamentMatchResult } from '../engine/types';
+import type { InvestmentId, PlayerState, EventChoiceOutcome, TournamentMatchResult } from '../engine/types';
 import type { AttributeKey } from '../data/positions';
 import * as CareerEngine from '../engine/career';
 import type { CreateCareerInput } from '../engine/career';
@@ -24,6 +24,7 @@ import { evaluateBadges, BADGES } from '../data/badges';
 import { getCountry } from '../data/countries';
 import { getConsumable } from '../data/shop';
 import { adjustFitness, adjustMorale } from '../engine/util';
+import { investAmount, withdrawInvestment, giftFamily as giftFamilyEngine, giftPartner as giftPartnerEngine, type GiftTierId } from '../engine/finance';
 import type { StatDelta } from '../engine/diff';
 
 const CAREER_STORAGE_KEY = 'destiny11_career_v1';
@@ -36,6 +37,9 @@ function loadCareer(): PlayerState | null {
     // Rétrocompatibilité : une carrière sauvegardée avant l'ajout d'un champ ne l'aura pas.
     parsed.rival ??= null;
     parsed.firedOnceEventIds ??= [];
+    parsed.savings ??= 0;
+    parsed.investments ??= {};
+    parsed.relationship ??= { status: 'celibataire', partnerName: null, since: parsed.season ?? 1, happiness: 50 };
     return parsed;
   } catch {
     return null;
@@ -90,6 +94,12 @@ interface GameStore {
   setEquippedAdvantages: (ids: string[]) => void;
   purchaseConsumable: (id: string) => void;
   activateConsumable: (id: string) => void;
+
+  lastFinanceResult: string | null;
+  investInPortfolio: (id: InvestmentId, amount: number) => void;
+  withdrawFromPortfolio: (id: InvestmentId) => void;
+  giftFamily: (tierId: GiftTierId) => void;
+  giftPartner: (tierId: GiftTierId) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -99,6 +109,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastEventDeltas: [],
   lastNegotiationResult: null,
   lastTournamentMatch: null,
+  lastFinanceResult: null,
   meta: loadMeta(),
   careerEndSummary: null,
 
@@ -346,6 +357,38 @@ export const useGameStore = create<GameStore>((set, get) => ({
     saveCareer(career);
     saveMeta(nextMeta);
     set({ career: { ...career }, meta: nextMeta });
+  },
+
+  investInPortfolio: (id, amount) => {
+    const { career } = get();
+    if (!career) return;
+    const result = investAmount(career, id, amount);
+    saveCareer(career);
+    set({ career: { ...career }, lastFinanceResult: result });
+  },
+
+  withdrawFromPortfolio: (id) => {
+    const { career } = get();
+    if (!career) return;
+    const result = withdrawInvestment(career, id);
+    saveCareer(career);
+    set({ career: { ...career }, lastFinanceResult: result });
+  },
+
+  giftFamily: (tierId) => {
+    const { career } = get();
+    if (!career) return;
+    const result = giftFamilyEngine(career, tierId);
+    saveCareer(career);
+    set({ career: { ...career }, lastFinanceResult: result });
+  },
+
+  giftPartner: (tierId) => {
+    const { career } = get();
+    if (!career) return;
+    const result = giftPartnerEngine(career, tierId);
+    saveCareer(career);
+    set({ career: { ...career }, lastFinanceResult: result });
   },
 }));
 

@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { useGameStore } from '../../state/store';
 
 const NAV_ITEMS = [
   { to: '/boutique', icon: '🛒', label: 'Boutique' },
@@ -8,6 +9,8 @@ const NAV_ITEMS = [
 
 export default function Header() {
   const location = useLocation();
+  const career = useGameStore((s) => s.career);
+  const navItems = career && !career.retired ? [{ to: '/patrimoine', icon: '💰', label: 'Patrimoine' }, ...NAV_ITEMS] : NAV_ITEMS;
   return (
     <header className="sticky top-0 z-40 border-b border-pitch-600/40 bg-pitch-950/80 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
@@ -18,7 +21,7 @@ export default function Header() {
           Destiny Eleven
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const active = location.pathname === item.to;
             return (
               <Link
