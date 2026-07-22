@@ -1,5 +1,6 @@
 import type { PlayerState, PlayStyle, SeasonRecord, TransferOffer } from './types';
 import { overallRating } from './types';
+import { COUNTRIES } from '../data/countries';
 import type { Country } from '../data/countries';
 import type { Position } from '../data/positions';
 import { getAgent } from '../data/agents';
@@ -15,6 +16,31 @@ export function computeOverall(state: PlayerState, position: Position): number {
 }
 
 // ---------------- Offres de club ----------------
+
+// Décide, pour une offre donnée, si elle vient du pays de référence (nation d'origine, ou pays
+// du club actuel si le joueur est déjà expatrié) ou d'un pays étranger — de plus en plus probable
+// à mesure que réputation et niveau grandissent — puis choisit ce pays étranger par proximité de
+// niveau de championnat avec le score du joueur (pas de Real Madrid à 45 de général).
+function pickOfferCountryCode(state: PlayerState, referenceCode: string, biasedScore: number): string {
+  const foreignChance = clamp(0.08 + state.reputation / 400 + biasedScore / 400, 0.05, 0.75);
+  if (!nextChance(state, foreignChance)) return referenceCode;
+
+  const targetStrength = clamp(biasedScore / 11, 1, 10);
+  const sigma = 3.2;
+  const candidates = COUNTRIES.filter((c) => c.code !== referenceCode);
+  const weighted = candidates.map((c) => {
+    const diff = c.leagueStrength - targetStrength;
+    return { code: c.code, weight: Math.exp(-(diff * diff) / (2 * sigma * sigma)) };
+  });
+  const total = weighted.reduce((s, w) => s + w.weight, 0);
+  if (total <= 0) return referenceCode;
+  let r = nextFloat(state) * total;
+  for (const w of weighted) {
+    r -= w.weight;
+    if (r <= 0) return w.code;
+  }
+  return weighted[weighted.length - 1].code;
+}
 
 export function generateOffers(
   state: PlayerState,
@@ -32,43 +58,42 @@ export function generateOffers(
   const effectiveCount = Math.max(1, Math.round(count * (agent.offerFrequencyModifier + scoutingBonus)));
   const offers: TransferOffer[] = [];
   const currentClubName = state.club?.name ? [state.club.name] : [];
+  const referenceCode = state.club?.countryCode ?? country.code;
 
-  if (hasLeagueSystem(country.code)) {
-    // Pays à pyramide réelle : les offres restent crédibles par rapport à la division
-    // actuelle (pas de saut direct de l'amateur à l'élite), avec de vrais noms de division.
-    const bottomLevel = maxDivisionLevel(country.code);
-    const currentLevel = state.club && state.club.countryCode === country.code && state.club.divisionLevel
-      ? state.club.divisionLevel
-      : bottomLevel;
+  for (let i = 0; i < effectiveCount; i++) {
+    const offerCountryCode = pickOfferCountryCode(state, referenceCode, biasedScore);
+    const avoid = [...state.seenClubNames, ...currentClubName, ...offers.map((o) => o.clubName)];
+    const roleRoll = nextFloat(state);
+    const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
 
-    for (let i = 0; i < effectiveCount; i++) {
-      const level = weightedDivisionLevel(country.code, currentLevel, biasedScore, () => nextFloat(state));
-      const tier = resolveClubTier({ tierIndex: 0, countryCode: country.code, divisionLevel: level });
+    if (hasLeagueSystem(offerCountryCode)) {
+      // Pays à pyramide réelle : les offres restent crédibles par rapport à la division
+      // actuelle (pas de saut direct de l'amateur à l'élite), avec de vrais noms de division.
+      const bottomLevel = maxDivisionLevel(offerCountryCode);
+      const currentLevel = state.club && state.club.countryCode === offerCountryCode && state.club.divisionLevel
+        ? state.club.divisionLevel
+        : bottomLevel;
+      const level = weightedDivisionLevel(offerCountryCode, currentLevel, biasedScore, () => nextFloat(state));
+      const tier = resolveClubTier({ tierIndex: 0, countryCode: offerCountryCode, divisionLevel: level });
       const variance = 0.75 + nextFloat(state) * 0.6;
       const wage = Math.round(tier.wageBase * variance * (0.6 + state.reputation / 130) * (1 + wageBoost));
       const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
-      const roleRoll = nextFloat(state);
-      const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
-      const avoid = [...state.seenClubNames, ...currentClubName, ...offers.map((o) => o.clubName)];
       offers.push({
-        clubName: pickClubFromDivision(country.code, level, rngFromCarrier(state), avoid),
+        clubName: pickClubFromDivision(offerCountryCode, level, rngFromCarrier(state), avoid),
         tierIndex: clamp(6 - level, 1, 5),
         divisionLevel: level,
-        countryCode: country.code,
+        countryCode: offerCountryCode,
         wage,
         signingBonus,
         role,
       });
-    }
-  } else {
-    const sigma = 14;
-    const weighted = CLUB_TIERS.map((t) => {
-      const diff = biasedScore - t.prestige;
-      const w = Math.exp(-(diff * diff) / (2 * sigma * sigma)) * (t.index === 0 ? 0.15 : 1);
-      return { tier: t, weight: w };
-    });
-
-    for (let i = 0; i < effectiveCount; i++) {
+    } else {
+      const sigma = 14;
+      const weighted = CLUB_TIERS.map((t) => {
+        const diff = biasedScore - t.prestige;
+        const w = Math.exp(-(diff * diff) / (2 * sigma * sigma)) * (t.index === 0 ? 0.15 : 1);
+        return { tier: t, weight: w };
+      });
       const total = weighted.reduce((s, w) => s + w.weight, 0);
       let r = nextFloat(state) * total;
       let picked = weighted[weighted.length - 1].tier;
@@ -79,13 +104,10 @@ export function generateOffers(
       const variance = 0.75 + nextFloat(state) * 0.6;
       const wage = Math.round(picked.wageBase * variance * (0.6 + state.reputation / 130) * (1 + wageBoost));
       const signingBonus = Math.round(wage * (0.1 + nextFloat(state) * 0.35));
-      const roleRoll = nextFloat(state);
-      const role: TransferOffer['role'] = roleRoll < 0.45 ? 'titulaire' : roleRoll < 0.8 ? 'rotation' : 'reserviste';
-      const avoid = [...state.seenClubNames, ...currentClubName, ...offers.map((o) => o.clubName)];
       offers.push({
-        clubName: pickRealClub(country.code, picked.index, rngFromCarrier(state), avoid),
+        clubName: pickRealClub(offerCountryCode, picked.index, rngFromCarrier(state), avoid),
         tierIndex: picked.index,
-        countryCode: country.code,
+        countryCode: offerCountryCode,
         wage,
         signingBonus,
         role,

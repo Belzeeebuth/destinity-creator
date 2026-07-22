@@ -1,4 +1,5 @@
 import type { AttributeKey } from '../data/positions';
+import { getPosition } from '../data/positions';
 import type { PlayerState } from './types';
 
 export function clamp(value: number, min: number, max: number): number {
@@ -9,6 +10,16 @@ export function adjustAttribute(state: PlayerState, key: AttributeKey, delta: nu
   state.attributes[key] = clamp(Math.round((state.attributes[key] + delta) * 10) / 10, 1, 99);
   if (state.attributes[key] > state.potential[key]) {
     state.potential[key] = state.attributes[key];
+  }
+}
+
+// Répartit un delta de note générale (OVR) sur tous les attributs pondérés du poste actuel :
+// comme overall = somme(attr*poids)/somme(poids), ajouter `amount` à chaque attribut pondéré
+// déplace la moyenne pondérée d'exactement `amount` (avant écrêtage éventuel par le potentiel).
+export function adjustOverallBy(state: PlayerState, amount: number): void {
+  const position = getPosition(state.positionCode);
+  for (const key of Object.keys(position.weights) as AttributeKey[]) {
+    if (position.weights[key] > 0) adjustAttribute(state, key, amount);
   }
 }
 

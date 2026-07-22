@@ -20,7 +20,7 @@ import {
   playKnockoutMatch,
 } from './tournament';
 import { evolveInvestments, generateMarketProfile } from './finance';
-import { clamp, formatMoney } from './util';
+import { clamp, formatMoney, adjustOverallBy } from './util';
 import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from './rng';
 import { snapshotStats, diffStats, type StatDelta } from './diff';
 
@@ -197,6 +197,34 @@ export function startMidSeasonCheckpoint(state: PlayerState): EventChoiceOutcome
   return rolled.choices;
 }
 
+// Au-delà de l'effet écrit de chaque choix, une issue clairement bonne ou clairement mauvaise a
+// parfois une répercussion supplémentaire, aléatoire, sur la note générale : un vrai déclic de
+// confiance qui fait progresser plus que d'habitude, ou un coup dur qui grignote un peu le niveau.
+// On ne rajoute rien si le choix a déjà fait bouger l'OVR de façon significative par lui-même
+// (ex. blessure avec séquelle permanente), pour ne pas empiler les effets sur les évènements déjà
+// dramatiques.
+function rollSentimentOverallSwing(
+  state: PlayerState,
+  before: ReturnType<typeof snapshotStats>,
+  after: ReturnType<typeof snapshotStats>,
+): void {
+  const rawOverallDelta = after.overall - before.overall;
+  if (Math.abs(rawOverallDelta) >= 1) return;
+
+  const sentiment =
+    rawOverallDelta * 3 +
+    (after.morale - before.morale) * 0.3 +
+    (after.reputation - before.reputation) * 0.25 +
+    (after.discipline - before.discipline) * 0.25 +
+    (after.fitness - before.fitness) * 0.15;
+
+  if (sentiment >= 2 && nextChance(state, 0.25)) {
+    adjustOverallBy(state, 0.1 + nextFloat(state) * 1.4);
+  } else if (sentiment <= -2 && nextChance(state, 0.3)) {
+    adjustOverallBy(state, -(0.1 + nextFloat(state) * 0.5));
+  }
+}
+
 export function resolveEventChoice(
   state: PlayerState,
   choices: EventChoiceOutcome[],
@@ -205,6 +233,7 @@ export function resolveEventChoice(
   const choice = choices[choiceIndex];
   const before = snapshotStats(state);
   const resultText = choice.apply(state);
+  rollSentimentOverallSwing(state, before, snapshotStats(state));
   const deltas = diffStats(before, snapshotStats(state));
   state.eventsRemainingThisSeason = Math.max(0, state.eventsRemainingThisSeason - 1);
   state.pendingEvent = null;
