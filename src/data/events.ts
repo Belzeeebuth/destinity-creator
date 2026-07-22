@@ -248,7 +248,15 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Laisser planer le doute',
-          apply: (s) => { adjustReputation(s, 4); adjustMorale(s, -2); return 'La pression monte sur le club pour te retenir... ou te vendre cher. (+Réputation)'; },
+          apply: (s) => {
+            adjustReputation(s, 4);
+            adjustMorale(s, -2);
+            if (nextChance(s, 0.35)) {
+              adjustAttribute(s, 'mental', -2);
+              return 'La rumeur enfle plus que prévu et parasite ta concentration à l’entraînement. (+Réputation, -Mental)';
+            }
+            return 'La pression monte sur le club pour te retenir... ou te vendre cher. (+Réputation)';
+          },
         },
         {
           label: 'Ne rien dire',
@@ -268,7 +276,17 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Accepter avec fierté',
-          apply: (s) => { s.captain = true; adjustAttribute(s, 'mental', 3); adjustReputation(s, 5); return 'Un vrai tournant dans ta carrière : le vestiaire est désormais tourné vers toi. (+Mental, +Réputation)'; },
+          apply: (s) => {
+            s.captain = true;
+            if (nextChance(s, 0.25)) {
+              adjustAttribute(s, 'mental', -3);
+              adjustMorale(s, -4);
+              return 'Le poids du brassard te pèse plus que prévu : la pression te ronge. (-Mental, -Moral)';
+            }
+            adjustAttribute(s, 'mental', 3);
+            adjustReputation(s, 5);
+            return 'Un vrai tournant dans ta carrière : le vestiaire est désormais tourné vers toi. (+Mental, +Réputation)';
+          },
         },
         {
           label: "Décliner, tu n'es pas prêt",
@@ -455,7 +473,17 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Communiquer et savourer le moment',
-          apply: (s) => { adjustReputation(s, 6); adjustDiscipline(s, -2); s.awards.push(`Nommé — saison ${s.season}`); return 'Ton nom circule dans tous les médias sportifs de la planète.'; },
+          apply: (s) => {
+            s.awards.push(`Nommé — saison ${s.season}`);
+            if (nextChance(s, 0.3)) {
+              adjustAttribute(s, 'mental', -2);
+              adjustDiscipline(s, -5);
+              return 'La tête enfle un peu trop vite : la nomination te fait perdre le fil de tes habitudes de pro. (-Mental, -Discipline)';
+            }
+            adjustReputation(s, 6);
+            adjustDiscipline(s, -2);
+            return 'Ton nom circule dans tous les médias sportifs de la planète.';
+          },
         },
         {
           label: 'Rester humble, focus collectif',
@@ -507,7 +535,14 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Continuer sans rien changer',
-          apply: (s) => { adjustMorale(s, -8); return 'Tu serres les dents, au risque de craquer plus tard. (-Moral)'; },
+          apply: (s) => {
+            adjustMorale(s, -8);
+            if (nextChance(s, 0.4)) {
+              adjustAttribute(s, 'physique', -2);
+              return "Le corps finit par accuser le coup : l'épuisement te ronge physiquement. (-Moral, -Physique)";
+            }
+            return 'Tu serres les dents, au risque de craquer plus tard. (-Moral)';
+          },
         },
       ],
     }),
@@ -527,7 +562,15 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Le voir comme une menace et hausser ton niveau',
-          apply: (s) => { adjustAttribute(s, s.focusAttribute ?? 'physique', 2); return 'La concurrence te pousse à repousser tes limites.'; },
+          apply: (s) => {
+            const target = s.focusAttribute ?? 'physique';
+            if (nextChance(s, 0.3)) {
+              adjustAttribute(s, target, -2);
+              return 'Tu forces le trait et prends de mauvaises habitudes à force d’en faire trop.';
+            }
+            adjustAttribute(s, target, 2);
+            return 'La concurrence te pousse à repousser tes limites.';
+          },
         },
       ],
     }),
@@ -543,7 +586,16 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: "Tout quitter pour l'exil",
-          apply: (s) => { adjustAttribute(s, 'mental', 2); adjustReputation(s, 4); return 'Un saut dans l’inconnu, loin des tiens, mais vers plus d’exposition. (+Mental, +Réputation)'; },
+          apply: (s) => {
+            if (nextChance(s, 0.35)) {
+              adjustMorale(s, -10);
+              adjustAttribute(s, 'mental', -2);
+              return 'Le mal du pays et l’adaptation sont bien plus durs que prévu. (-Moral, -Mental)';
+            }
+            adjustAttribute(s, 'mental', 2);
+            adjustReputation(s, 4);
+            return 'Un saut dans l’inconnu, loin des tiens, mais vers plus d’exposition. (+Mental, +Réputation)';
+          },
         },
         {
           label: 'Rester au pays, en sélection facilement',
@@ -563,7 +615,15 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Réagir en conférence de presse',
-          apply: (s) => { adjustDiscipline(s, 3); return 'Une mise au point qui calme le jeu. (+Discipline)'; },
+          apply: (s) => {
+            if (nextChance(s, 0.3)) {
+              adjustReputation(s, -6);
+              adjustDiscipline(s, -3);
+              return 'Ta mise au point envenime les choses au lieu de calmer le jeu. (-Réputation, -Discipline)';
+            }
+            adjustDiscipline(s, 3);
+            return 'Une mise au point qui calme le jeu. (+Discipline)';
+          },
         },
         {
           label: 'Ignorer la polémique',
@@ -630,7 +690,16 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Ignorer et prouver qu’ils ont tort',
-          apply: (s) => { adjustMorale(s, 6); adjustAttribute(s, 'mental', 2); return 'La colère nourrit une motivation retrouvée. (+Moral, +Mental)'; },
+          apply: (s) => {
+            if (nextChance(s, 0.3)) {
+              adjustAttribute(s, 'physique', -2);
+              adjustMorale(s, -5);
+              return 'Le corps ne suit plus : la fatigue te trahit publiquement, donnant raison aux critiques. (-Physique, -Moral)';
+            }
+            adjustMorale(s, 6);
+            adjustAttribute(s, 'mental', 2);
+            return 'La colère nourrit une motivation retrouvée. (+Moral, +Mental)';
+          },
         },
         {
           label: 'Écouter et planifier une sortie maîtrisée',
@@ -719,7 +788,16 @@ const EVENTS: EventTemplate[] = [
         choices: [
           {
             label: 'Accepter le pactole',
-            apply: (s2) => { s2.wage = offer; adjustReputation(s2, -4); adjustMorale(s2, 8); return `Le confort financier avec un salaire de ${formatMoney(offer)}, loin des projecteurs du haut niveau.`; },
+            apply: (s2) => {
+              s2.wage = offer;
+              adjustReputation(s2, -4);
+              adjustMorale(s2, 8);
+              if (nextChance(s2, 0.4)) {
+                adjustAttribute(s2, 'physique', -3);
+                return `Le confort financier avec un salaire de ${formatMoney(offer)}, mais le niveau sportif inférieur du championnat te fait clairement régresser. (-Physique)`;
+              }
+              return `Le confort financier avec un salaire de ${formatMoney(offer)}, loin des projecteurs du haut niveau.`;
+            },
           },
           {
             label: 'Refuser, rester compétitif',
@@ -740,7 +818,16 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Commencer la formation',
-          apply: (s) => { adjustDiscipline(s, -2); adjustAttribute(s, 'vision', 2); s.awards.push('Formation entraîneur entamée'); return 'Un double projet exigeant, mais un avenir qui se prépare. (+Vision)'; },
+          apply: (s) => {
+            adjustDiscipline(s, -2);
+            s.awards.push('Formation entraîneur entamée');
+            if (nextChance(s, 0.3)) {
+              adjustAttribute(s, s.focusAttribute ?? 'physique', -2);
+              return 'Le double projet grignote ton temps d’entraînement plus que prévu. (-Discipline)';
+            }
+            adjustAttribute(s, 'vision', 2);
+            return 'Un double projet exigeant, mais un avenir qui se prépare. (+Vision)';
+          },
         },
         {
           label: 'Rester focus à 100% sur le terrain',

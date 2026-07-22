@@ -21,12 +21,13 @@ export function generateOffers(
   country: Country,
   position: Position,
   count: number,
+  recentFormBonus = 0,
 ): TransferOffer[] {
   const agent = getAgent(state.agentId);
   const scoutingBonus = state.advantageEffects.scouting ?? 0;
   const wageBoost = state.advantageEffects.wage_boost ?? 0;
   const overall = computeOverall(state, position);
-  const score = overall * 0.65 + country.leagueStrength * 3.2 + state.reputation * 0.25 + (country.scouting - 5) * 2;
+  const score = overall * 0.65 + country.leagueStrength * 3.2 + state.reputation * 0.25 + (country.scouting - 5) * 2 + recentFormBonus * 6;
   const biasedScore = score * (agent.offerQualityModifier + scoutingBonus);
   const effectiveCount = Math.max(1, Math.round(count * (agent.offerFrequencyModifier + scoutingBonus)));
   const offers: TransferOffer[] = [];

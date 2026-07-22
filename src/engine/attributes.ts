@@ -49,12 +49,13 @@ export function initializeAttributes(
     const weight = position.weights[key];
     const isKeyAttribute = position.keyAttributes.includes(key);
     // Base de départ : plus l'attribut est important pour le poste, plus la base est haute.
-    let base = 22 + weight * 4 + randInt(rng, -4, 4);
+    // Constante calibrée pour une note générale moyenne d'environ 45 à la création (16 ans).
+    let base = 37 + weight * 4 + randInt(rng, -4, 4);
     base += background.attributeStart[key] ?? 0;
     if (key === 'reflexes' && position.code !== 'GK') {
       base = 5 + randInt(rng, -2, 2); // hors gardiens, réflexes n'est presque pas utilisé
     }
-    base = clamp(base, 8, 55);
+    base = clamp(base, 8, 68);
     attributes[key] = Math.round(base);
 
     // Potentiel : plafond que l'attribut pourra atteindre en fin de progression.

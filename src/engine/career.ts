@@ -382,12 +382,15 @@ export function finalizeSeasonEnd(state: PlayerState): { forcedRetirement: boole
   state.fitness = clamp(state.fitness + nextInt(state, -3, 14), 25, 100);
   state.playedTournamentThisSeason = false;
 
-  const agent = getAgent(state.agentId);
-  const scoutingBonus = state.advantageEffects.scouting ?? 0;
-  const moveDesireChance = clamp(0.1 + state.reputation / 260, 0, 0.6) * (agent.offerFrequencyModifier + scoutingBonus);
-  const shouldOffer = !state.club || nextFloat(state) < moveDesireChance;
-  state.pendingOffers = shouldOffer ? generateOffers(state, country, position, state.club ? 2 : 3) : [];
-  state.phase = state.pendingOffers.length > 0 ? 'transfer_window' : 'preseason';
+  // Le mercato est désormais proposé à chaque fin de saison : la qualité et le nombre d'offres
+  // reflètent explicitement tes deux dernières saisons, pas seulement ta réputation globale.
+  const recentSeasons = state.history.slice(-2);
+  const recentFormBonus = recentSeasons.length > 0
+    ? recentSeasons.reduce((sum, h) => sum + (h.avgRating - 6.5), 0) / recentSeasons.length
+    : 0;
+  const offerCount = state.club ? clamp(Math.round(2 + recentFormBonus * 0.8), 1, 4) : 3;
+  state.pendingOffers = generateOffers(state, country, position, offerCount, recentFormBonus);
+  state.phase = 'transfer_window';
   return { forcedRetirement: false };
 }
 
