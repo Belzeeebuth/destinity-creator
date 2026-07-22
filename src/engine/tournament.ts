@@ -7,6 +7,7 @@ import type {
   PendingTournamentInvite,
   TournamentState,
   TournamentMatchResult,
+  TournamentMatchTimelineEvent,
   TournamentTeamStanding,
   TournamentRivalStat,
 } from './types';
@@ -161,6 +162,8 @@ function simulateMatch(
   if (playerGoals > 0) narrative += ` Toi : ${playerGoals} but${playerGoals > 1 ? 's' : ''}.`;
   if (playerAssists > 0) narrative += ` ${playerAssists} passe décisive.`;
 
+  const timeline = buildMatchTimeline(state, opponent.name, scoreFor, scoreAgainst, playerGoals, playerAssists, isKnockout, wonOnPenalties);
+
   return {
     roundLabel,
     opponentCountryCode,
@@ -172,7 +175,102 @@ function simulateMatch(
     playerAssists,
     playerRating: Math.round(playerRating * 10) / 10,
     narrative,
+    timeline,
   };
+}
+
+// ---------------- Fil du match (minute par minute) ----------------
+
+function shuffledIndices(state: PlayerState, n: number): number[] {
+  const arr = Array.from({ length: n }, (_, i) => i);
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = nextInt(state, 0, i);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function distinctMinutes(state: PlayerState, count: number, max = 89): number[] {
+  const minutes = new Set<number>();
+  let guard = 0;
+  while (minutes.size < count && guard < count * 25) {
+    guard++;
+    minutes.add(1 + nextInt(state, 0, max - 1));
+  }
+  return Array.from(minutes).sort((a, b) => a - b);
+}
+
+function leadPhrase(lead: number): string {
+  if (lead === 0) return '';
+  return lead > 0 ? ' (tu mènes)' : ' (tu es mené)';
+}
+
+// Construit un fil d'évènements minute par minute (but par but) pour donner du relief à un
+// match qui, autrement, se résumait à un score annoncé d'un coup sans aucun déroulé.
+function buildMatchTimeline(
+  state: PlayerState,
+  opponentName: string,
+  scoreFor: number,
+  scoreAgainst: number,
+  playerGoals: number,
+  playerAssists: number,
+  isKnockout: boolean,
+  wonOnPenalties: boolean | undefined,
+): TournamentMatchTimelineEvent[] {
+  const events: TournamentMatchTimelineEvent[] = [
+    { minuteLabel: "Coup d'envoi", text: `Le coup d'envoi est donné face à ${opponentName}.` },
+  ];
+
+  const forMinutes = distinctMinutes(state, scoreFor);
+  const againstMinutes = distinctMinutes(state, scoreAgainst);
+
+  const playerGoalSlots = new Set<number>();
+  if (playerGoals > 0 && forMinutes.length > 0) {
+    shuffledIndices(state, forMinutes.length)
+      .slice(0, Math.min(playerGoals, forMinutes.length))
+      .forEach((i) => playerGoalSlots.add(i));
+  }
+  let assistSlot = -1;
+  if (playerAssists > 0) {
+    const remaining = forMinutes.map((_, i) => i).filter((i) => !playerGoalSlots.has(i));
+    if (remaining.length > 0) assistSlot = remaining[nextInt(state, 0, remaining.length - 1)];
+  }
+
+  const raw = [
+    ...forMinutes.map((minute, i) => ({ minute, side: 'for' as const, isPlayerGoal: playerGoalSlots.has(i), isPlayerAssist: i === assistSlot })),
+    ...againstMinutes.map((minute) => ({ minute, side: 'against' as const, isPlayerGoal: false, isPlayerAssist: false })),
+  ].sort((a, b) => a.minute - b.minute);
+
+  let tallyFor = 0;
+  let tallyAgainst = 0;
+  for (const g of raw) {
+    if (g.side === 'for') tallyFor += 1;
+    else tallyAgainst += 1;
+    const lead = tallyFor - tallyAgainst;
+    const score = `${tallyFor}-${tallyAgainst}`;
+    const text =
+      g.side === 'against'
+        ? `But de ${opponentName}. ${score}${leadPhrase(lead)}`
+        : g.isPlayerGoal
+          ? `BUT DE TOI ! ${score}${leadPhrase(lead)}`
+          : g.isPlayerAssist
+            ? `But de ton équipe sur ta passe décisive ! ${score}${leadPhrase(lead)}`
+            : `But de ton équipe. ${score}${leadPhrase(lead)}`;
+    events.push({ minuteLabel: `${g.minute}'`, text, isPlayerInvolved: g.isPlayerGoal || g.isPlayerAssist });
+  }
+
+  if (isKnockout && wonOnPenalties !== undefined) {
+    events.push({
+      minuteLabel: 'Tirs au but',
+      text: wonOnPenalties
+        ? 'Score serré après prolongation : la séance de tirs au but sourit à ton équipe !'
+        : 'Score serré après prolongation : la séance de tirs au but échappe à ton équipe.',
+    });
+  } else {
+    events.push({ minuteLabel: 'Coup de sifflet final', text: 'Coup de sifflet final.' });
+  }
+
+  return events;
 }
 
 function poissonish(state: PlayerState, expected: number): number {

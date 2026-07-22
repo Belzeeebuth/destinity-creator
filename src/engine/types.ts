@@ -167,6 +167,12 @@ export interface TournamentTeamStanding {
   points: number;
 }
 
+export interface TournamentMatchTimelineEvent {
+  minuteLabel: string;
+  text: string;
+  isPlayerInvolved?: boolean;
+}
+
 export interface TournamentMatchResult {
   roundLabel: string;
   opponentCountryCode: string;
@@ -178,6 +184,7 @@ export interface TournamentMatchResult {
   playerAssists: number;
   playerRating: number;
   narrative: string;
+  timeline: TournamentMatchTimelineEvent[];
 }
 
 export interface TournamentRivalStat {

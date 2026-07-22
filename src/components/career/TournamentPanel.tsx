@@ -31,14 +31,38 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
 
   const nextOpponentCode = t.stage === 'groupes' ? t.groupOpponents[t.groupMatchIndex] : null;
   const nextOpponent = nextOpponentCode ? getCountry(nextOpponentCode) : null;
+  const inKnockout = t.stage !== 'groupes';
 
   return (
     <div className="card animate-pop-in flex flex-col items-center gap-5 p-8 text-center">
       <StageStepper current={t.stage} />
       <h2 className="font-display text-2xl text-ink-100">{t.tournamentName}</h2>
-      <p className="text-xs uppercase tracking-wide text-gold-400">{t.finalStageLabel}</p>
 
-      {t.groupTable.length > 0 && <GroupTable table={t.groupTable} />}
+      {inKnockout ? (
+        <div className="animate-pop-in flex flex-col items-center gap-1.5 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-6 py-4">
+          <span className="text-3xl" aria-hidden>
+            🏟️
+          </span>
+          <p className="text-[11px] uppercase tracking-wide text-gold-400">Phase à élimination directe</p>
+          <p className="font-display text-xl text-ink-100">{t.finalStageLabel}</p>
+          <p className="text-xs text-ink-400">Match couperet : la défaite met fin au tournoi.</p>
+        </div>
+      ) : (
+        <p className="text-xs uppercase tracking-wide text-gold-400">{t.finalStageLabel}</p>
+      )}
+
+      {t.stage === 'groupes' && t.groupTable.length > 0 && <GroupTable table={t.groupTable} />}
+
+      {inKnockout && t.groupTable.length > 0 && (
+        <details className="w-full text-xs text-ink-400">
+          <summary className="cursor-pointer select-none text-ink-500 transition hover:text-ink-300">
+            Revoir le classement de la phase de poules
+          </summary>
+          <div className="mt-2">
+            <GroupTable table={t.groupTable} />
+          </div>
+        </details>
+      )}
 
       {nextOpponent && (
         <div className="flex items-center gap-2 text-sm text-ink-300">
@@ -49,7 +73,7 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
       {t.matches.length > 0 && <MatchLog matches={t.matches} />}
 
       <button onClick={playTournamentStep} className="btn-gold rounded-full px-8 py-2.5 text-sm">
-        ⚽ Disputer le match
+        ⚽ Disputer {inKnockout ? `le ${t.finalStageLabel.toLowerCase()}` : 'le match'}
       </button>
     </div>
   );
@@ -145,6 +169,24 @@ function MatchResultCard({ result, onContinue }: { result: TournamentMatchResult
           {result.scoreFor} - {result.scoreAgainst}
         </span>
       </div>
+
+      {result.timeline.length > 0 && (
+        <div className="flex w-full max-w-md flex-col gap-1.5 text-left">
+          {result.timeline.map((ev, i) => (
+            <div
+              key={i}
+              className={`animate-fade-in-up flex items-start gap-3 rounded-md px-3 py-1.5 text-xs ${
+                ev.isPlayerInvolved ? 'bg-gold-500/10 font-semibold text-gold-400' : 'bg-white/5 text-ink-300'
+              }`}
+              style={{ animationDelay: `${i * 90}ms` }}
+            >
+              <span className="w-20 shrink-0 text-ink-500">{ev.minuteLabel}</span>
+              <span className="flex-1">{ev.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <p className="max-w-md text-sm text-ink-300">{result.narrative}</p>
       <div className="flex items-center gap-2 text-xs text-ink-400">
         <span className="rounded-full bg-white/5 px-3 py-1">Note : {result.playerRating.toFixed(1)}/10</span>
