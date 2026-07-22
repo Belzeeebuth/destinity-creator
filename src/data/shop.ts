@@ -16,7 +16,9 @@ export type AdvantageEffect =
 export interface Advantage {
   id: string;
   name: string;
+  nameEn: string;
   description: string;
+  descriptionEn: string;
   effect: AdvantageEffect;
   baseValue: number; // effet au niveau 1
   valuePerLevel: number; // effet additionnel par niveau au-delà de 1
@@ -31,7 +33,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'prepa_physique',
     name: 'Préparateur physique personnel',
+    nameEn: 'Personal fitness coach',
     description: 'Ralentit le déclin physique et accélère la progression liée à l’entraînement.',
+    descriptionEn: 'Slows physical decline and speeds up training-related progression.',
     effect: 'growth',
     baseValue: 0.08,
     valuePerLevel: 0.06,
@@ -42,7 +46,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'staff_medical',
     name: 'Staff médical de pointe',
+    nameEn: 'Cutting-edge medical staff',
     description: 'Réduit le risque de blessure sur toute la carrière.',
+    descriptionEn: 'Reduces injury risk over your entire career.',
     effect: 'injury_shield',
     baseValue: 0.2,
     valuePerLevel: 0.12,
@@ -53,7 +59,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'carnet_adresses',
     name: 'Carnet d’adresses doré',
+    nameEn: 'Golden contact book',
     description: 'Tu démarres avec une réputation initiale plus élevée, plus vite repéré des recruteurs.',
+    descriptionEn: 'You start with a higher initial reputation, spotted faster by scouts.',
     effect: 'reputation_start',
     baseValue: 8,
     valuePerLevel: 6,
@@ -64,7 +72,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'mental_acier',
     name: 'Mental d’acier',
+    nameEn: 'Iron will',
     description: 'Réduit les risques d’incidents disciplinaires et de blessures face aux tentations.',
+    descriptionEn: 'Reduces the risk of disciplinary incidents and injuries when facing temptation.',
     effect: 'discipline_shield',
     baseValue: 0.22,
     valuePerLevel: 0.14,
@@ -75,7 +85,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'negociateur',
     name: 'Négociateur hors pair',
+    nameEn: 'Outstanding negotiator',
     description: 'Tes contrats et primes de signature sont systématiquement meilleurs.',
+    descriptionEn: 'Your contracts and signing bonuses are consistently better.',
     effect: 'wage_boost',
     baseValue: 0.12,
     valuePerLevel: 0.09,
@@ -86,7 +98,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'reseau_scouts',
     name: 'Réseau de recruteurs internationaux',
+    nameEn: 'International scouting network',
     description: 'Tu reçois davantage d’offres, et de meilleure qualité, à chaque fenêtre de transfert.',
+    descriptionEn: 'You receive more offers, and better ones, at every transfer window.',
     effect: 'scouting',
     baseValue: 0.15,
     valuePerLevel: 0.1,
@@ -97,7 +111,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'famille_soudee',
     name: 'Famille soudée',
+    nameEn: 'Close-knit family',
     description: 'Un socle familial stable : ton moral de départ est nettement plus élevé.',
+    descriptionEn: 'A stable family foundation: your starting morale is noticeably higher.',
     effect: 'morale_start',
     baseValue: 8,
     valuePerLevel: 6,
@@ -108,7 +124,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'genes_talent',
     name: 'Étincelle de talent',
+    nameEn: 'Spark of talent',
     description: 'Ton potentiel de progression est relevé sur tous les attributs.',
+    descriptionEn: 'Your growth potential is raised across all attributes.',
     effect: 'potential',
     baseValue: 3,
     valuePerLevel: 2,
@@ -119,7 +137,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'hygiene_de_vie',
     name: 'Hygiène de vie exemplaire',
+    nameEn: 'Exemplary lifestyle',
     description: 'Ta forme physique de départ et sa récupération saisonnière sont meilleures.',
+    descriptionEn: 'Your starting fitness and its seasonal recovery are better.',
     effect: 'fitness',
     baseValue: 6,
     valuePerLevel: 4,
@@ -130,7 +150,9 @@ export const ADVANTAGES: Advantage[] = [
   {
     id: 'formation_elite',
     name: 'Formation d’élite dès l’enfance',
+    nameEn: 'Elite training since childhood',
     description: 'Tes attributs de départ bénéficient d’un coup de pouce clé en main.',
+    descriptionEn: 'Your starting attributes get a ready-made boost.',
     effect: 'youth_headstart',
     baseValue: 2,
     valuePerLevel: 2,
@@ -179,7 +201,9 @@ export type ConsumableEffect = 'instant_fitness' | 'instant_morale' | 'season_gr
 export interface Consumable {
   id: string;
   name: string;
+  nameEn: string;
   description: string;
+  descriptionEn: string;
   cost: number;
   effect: ConsumableEffect;
   value: number;
@@ -189,7 +213,9 @@ export const CONSUMABLES: Consumable[] = [
   {
     id: 'soin_eclair',
     name: 'Soin éclair',
+    nameEn: 'Flash healing',
     description: 'Restaure instantanément une grande partie de ta forme physique.',
+    descriptionEn: 'Instantly restores a large part of your fitness.',
     cost: 35,
     effect: 'instant_fitness',
     value: 55,
@@ -197,7 +223,9 @@ export const CONSUMABLES: Consumable[] = [
   {
     id: 'regain_moral',
     name: 'Regain de moral',
+    nameEn: 'Morale boost',
     description: 'Un déclic psychologique qui redonne immédiatement le sourire.',
+    descriptionEn: 'A psychological spark that instantly brings back the smile.',
     cost: 25,
     effect: 'instant_morale',
     value: 30,
@@ -205,7 +233,9 @@ export const CONSUMABLES: Consumable[] = [
   {
     id: 'boost_entrainement',
     name: "Boost d'entraînement",
+    nameEn: 'Training boost',
     description: 'Augmente de 50% ta progression d’attributs pour la saison en cours.',
+    descriptionEn: 'Increases your attribute growth by 50% for the current season.',
     cost: 55,
     effect: 'season_growth_boost',
     value: 0.5,

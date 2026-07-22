@@ -1,5 +1,6 @@
 import type { AttributeKey, PositionCode } from '../data/positions';
 import type { ClubRef } from '../data/clubs';
+import type { Language } from '../i18n/language';
 
 export const START_AGE = 16;
 export const MAX_AGE = 45; // Age maximal (carte blanche : porté de 36 à 45 ans)
@@ -150,8 +151,11 @@ export type TournamentStageKey =
   | 'finale'
   | 'termine';
 
+export type TournamentKind = 'global' | 'continental';
+
 export interface PendingTournamentInvite {
   tournamentName: string;
+  kind: TournamentKind;
 }
 
 export interface TournamentTeamStanding {
@@ -206,6 +210,7 @@ export interface LockerRoomRival {
 
 export interface TournamentState {
   tournamentName: string;
+  kind: TournamentKind;
   stage: TournamentStageKey;
   groupOpponents: string[]; // codes pays, 3 adversaires de poule
   groupMatchIndex: number; // 0-2, prochain match de poule à disputer
@@ -222,6 +227,7 @@ export interface TournamentState {
 }
 
 export interface PlayerState {
+  language: Language;
   firstName: string;
   lastName: string;
   countryCode: string;
@@ -256,6 +262,7 @@ export interface PlayerState {
   captain: boolean;
   ballonsAttempts: number; // nombre de fois nominé pour la distinction de meilleur joueur mondial
   nationalTeamDoorClosed: boolean; // sortie médiatique ratée : le sélectionneur t'écarte définitivement
+  coachingPathStarted: boolean; // diplôme d'entraîneur entamé en parallèle (drapeau logique, indépendant du texte affiché)
 
   careerGoals: number;
   careerAssists: number;

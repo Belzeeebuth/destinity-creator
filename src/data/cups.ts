@@ -1,3 +1,5 @@
+import type { Language } from '../i18n/language';
+
 // Coupes nationales : noms réels et publics pour les pays où la pyramide de ligues est déjà
 // connue avec confiance (voir data/leagues.ts) ; libellé générique honnête pour les autres,
 // plutôt que d'inventer un nom qui n'existe pas.
@@ -32,6 +34,38 @@ const DOMESTIC_CUPS: Record<string, string> = {
   MA: 'Coupe du Trône',
 };
 
-export function domesticCupName(countryCode: string): string {
+const DOMESTIC_CUPS_EN: Record<string, string> = {
+  EN: 'FA Cup',
+  ES: 'Copa del Rey',
+  IT: 'Coppa Italia',
+  DE: 'DFB-Pokal',
+  PT: 'Taça de Portugal',
+  FR: 'Coupe de France',
+  NL: 'KNVB Cup',
+  BE: 'Belgian Cup',
+  BR: 'Copa do Brasil',
+  AR: 'Copa Argentina',
+  TR: 'Turkish Cup',
+  GR: 'Greek Cup',
+  MX: 'Copa MX',
+  PL: 'Polish Cup',
+  DK: 'Danish Cup',
+  SE: 'Swedish Cup',
+  CH: 'Swiss Cup',
+  AT: 'Austrian Cup',
+  UA: 'Ukrainian Cup',
+  CZ: 'Czech Cup',
+  HR: 'Croatian Cup',
+  CO: 'Copa Colombia',
+  CL: 'Copa Chile',
+  PE: 'Copa Bicentenario',
+  EC: 'Copa Ecuador',
+  UY: 'Copa Uruguay',
+  EG: 'Egypt Cup',
+  MA: 'Throne Cup',
+};
+
+export function domesticCupName(countryCode: string, lang: Language = 'fr'): string {
+  if (lang === 'en') return DOMESTIC_CUPS_EN[countryCode] ?? 'National Cup';
   return DOMESTIC_CUPS[countryCode] ?? 'Coupe nationale';
 }

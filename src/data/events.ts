@@ -821,6 +821,7 @@ const EVENTS: EventTemplate[] = [
           label: 'Commencer la formation',
           apply: (s) => {
             adjustDiscipline(s, -2);
+            s.coachingPathStarted = true;
             s.awards.push('Formation entraîneur entamée');
             if (nextChance(s, 0.3)) {
               adjustAttribute(s, s.focusAttribute ?? 'physique', -2);

@@ -7,9 +7,17 @@ import { getAgent } from '../data/agents';
 import { CLUB_TIERS, resolveClubTier } from '../data/clubs';
 import { pickRealClub } from '../data/realClubs';
 import { hasLeagueSystem, weightedDivisionLevel, pickClubFromDivision, maxDivisionLevel, divisionAt } from '../data/leagues';
-import { INJURY_TYPES, WORLD_PLAYER_AWARD, TOP_SCORER_AWARD, TEAM_OF_YEAR_AWARD } from '../data/awards';
+import {
+  INJURY_TYPES,
+  WORLD_PLAYER_AWARD,
+  WORLD_PLAYER_AWARD_EN,
+  TOP_SCORER_AWARD,
+  TOP_SCORER_AWARD_EN,
+  TEAM_OF_YEAR_AWARD,
+  TEAM_OF_YEAR_AWARD_EN,
+} from '../data/awards';
 import { nextFloat, nextInt, nextChance, nextWeightedPick, rngFromCarrier } from './rng';
-import { clamp, adjustReputation, adjustFitness, adjustMorale, applyPermanentAttributeLoss, formatMoney } from './util';
+import { clamp, adjustReputation, adjustFitness, adjustMorale, applyPermanentAttributeLoss, formatMoney, loc } from './util';
 
 export function computeOverall(state: PlayerState, position: Position): number {
   return overallRating(state.attributes, position.weights);
@@ -185,13 +193,31 @@ export function simulateSeason(
     appearances = Math.max(0, appearances - matchesOut);
     state.careerInjuries += 1;
     adjustFitness(state, -Math.min(35, 10 + matchesOut));
-    injuryNote = `${matchesOut} match${matchesOut > 1 ? 's' : ''} manqué${matchesOut > 1 ? 's' : ''} (${type.label})`;
-    narrative.push(`Blessure : ${type.label}, indisponible ${matchesOut} match${matchesOut > 1 ? 's' : ''}.`);
+    const typeLabel = loc(state, type.label, type.labelEn);
+    injuryNote = loc(
+      state,
+      `${matchesOut} match${matchesOut > 1 ? 's' : ''} manqué${matchesOut > 1 ? 's' : ''} (${typeLabel})`,
+      `${matchesOut} match${matchesOut > 1 ? 'es' : ''} missed (${typeLabel})`,
+    );
+    narrative.push(
+      loc(
+        state,
+        `Blessure : ${typeLabel}, indisponible ${matchesOut} match${matchesOut > 1 ? 's' : ''}.`,
+        `Injury: ${typeLabel}, out for ${matchesOut} match${matchesOut > 1 ? 'es' : ''}.`,
+      ),
+    );
     if (nextChance(state, type.permanentDecayChance)) {
       const decay = nextInt(state, 2, 6);
       const target = nextChance(state, 0.5) ? 'vitesse' : 'physique';
       applyPermanentAttributeLoss(state, target, decay);
-      narrative.push(`Séquelle physique durable : perte définitive de ${target === 'vitesse' ? 'vitesse' : 'physique'} (-${decay}).`);
+      const targetLabel = loc(state, target === 'vitesse' ? 'vitesse' : 'physique', target === 'vitesse' ? 'pace' : 'physical');
+      narrative.push(
+        loc(
+          state,
+          `Séquelle physique durable : perte définitive de ${targetLabel} (-${decay}).`,
+          `Lasting physical toll: permanent loss of ${targetLabel} (-${decay}).`,
+        ),
+      );
     }
   } else {
     adjustFitness(state, nextInt(state, -4, 10));
@@ -264,7 +290,7 @@ export function simulateSeason(
 
   // Distinctions individuelles majeures.
   const majorAwards = rollIndividualAwards(state, position, { goals, avgRating, cleanSheets, wonTrophy: trophies.length > 0 });
-  for (const award of majorAwards) narrative.push(`Distinction individuelle : ${award} !`);
+  for (const award of majorAwards) narrative.push(loc(state, `Distinction individuelle : ${award} !`, `Individual award: ${award}!`));
 
   state.careerGoals += goals;
   state.careerAssists += assists;
@@ -445,24 +471,29 @@ function rollIndividualAwards(
     state.ballonsAttempts += 1;
     const winChance = clamp((state.reputation - 78) / 45 + (ctx.wonTrophy ? 0.12 : 0) + ctx.goals / 60, 0.02, 0.4);
     if (nextChance(state, winChance)) {
-      won.push(WORLD_PLAYER_AWARD);
-      state.majorAwards.push(`${WORLD_PLAYER_AWARD} — saison ${state.season}`);
+      const label = loc(state, WORLD_PLAYER_AWARD, WORLD_PLAYER_AWARD_EN);
+      won.push(label);
+      state.majorAwards.push(loc(state, `${label} — saison ${state.season}`, `${label} — season ${state.season}`));
     }
   }
 
   if (position.code !== 'GK' && ctx.goals >= 24) {
     const scorerChance = clamp((ctx.goals - 24) / 20 + 0.08, 0.03, 0.55);
     if (nextChance(state, scorerChance)) {
-      won.push(TOP_SCORER_AWARD);
-      state.majorAwards.push(`${TOP_SCORER_AWARD} — saison ${state.season} (${ctx.goals} buts)`);
+      const label = loc(state, TOP_SCORER_AWARD, TOP_SCORER_AWARD_EN);
+      won.push(label);
+      state.majorAwards.push(
+        loc(state, `${label} — saison ${state.season} (${ctx.goals} buts)`, `${label} — season ${state.season} (${ctx.goals} goals)`),
+      );
     }
   }
 
   if (state.reputation >= 62 && ctx.avgRating >= 7.1) {
     const teamOfYearChance = clamp((state.reputation - 62) / 60 + (ctx.avgRating - 7.1) / 10, 0.03, 0.4);
     if (nextChance(state, teamOfYearChance)) {
-      won.push(TEAM_OF_YEAR_AWARD);
-      state.majorAwards.push(`${TEAM_OF_YEAR_AWARD} — saison ${state.season}`);
+      const label = loc(state, TEAM_OF_YEAR_AWARD, TEAM_OF_YEAR_AWARD_EN);
+      won.push(label);
+      state.majorAwards.push(loc(state, `${label} — saison ${state.season}`, `${label} — season ${state.season}`));
     }
   }
 

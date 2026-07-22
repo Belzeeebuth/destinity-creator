@@ -59,12 +59,16 @@ export function evolveInvestments(state: PlayerState): string[] {
 
 // Étiquette de risque lisible, calculée depuis la volatilité EFFECTIVE de cette carrière (et non
 // une valeur générique), pour informer le joueur sans lui révéler les chiffres bruts du moteur.
-export function riskLabel(volatility: number): { label: string; color: string } {
-  if (volatility <= 0.02) return { label: 'Aucun risque', color: '#8fd0a6' };
-  if (volatility <= 0.12) return { label: 'Risque faible', color: '#8fd0a6' };
-  if (volatility <= 0.3) return { label: 'Risque modéré', color: '#e8b94a' };
-  if (volatility <= 0.55) return { label: 'Risque élevé', color: '#e48a8a' };
-  return { label: 'Risque extrême', color: '#e05a5a' };
+export function riskLabel(volatility: number, lang: import('../i18n/language').Language = 'fr'): { label: string; color: string } {
+  const labels =
+    lang === 'en'
+      ? { none: 'No risk', low: 'Low risk', moderate: 'Moderate risk', high: 'High risk', extreme: 'Extreme risk' }
+      : { none: 'Aucun risque', low: 'Risque faible', moderate: 'Risque modéré', high: 'Risque élevé', extreme: 'Risque extrême' };
+  if (volatility <= 0.02) return { label: labels.none, color: '#8fd0a6' };
+  if (volatility <= 0.12) return { label: labels.low, color: '#8fd0a6' };
+  if (volatility <= 0.3) return { label: labels.moderate, color: '#e8b94a' };
+  if (volatility <= 0.55) return { label: labels.high, color: '#e48a8a' };
+  return { label: labels.extreme, color: '#e05a5a' };
 }
 
 export function investAmount(state: PlayerState, id: InvestmentId, amount: number): string {

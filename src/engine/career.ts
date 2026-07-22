@@ -25,6 +25,7 @@ import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from 
 import { snapshotStats, diffStats, type StatDelta } from './diff';
 
 export interface CreateCareerInput {
+  language?: import('./types').PlayerState['language'];
   firstName?: string;
   lastName?: string;
   countryCode: string;
@@ -68,6 +69,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
   const fitnessStart = clamp(80 + (advantageEffects.fitness ?? 0), 0, 100);
 
   const state: PlayerState = {
+    language: input.language ?? 'fr',
     firstName: input.firstName?.trim() || generated.firstName,
     lastName: input.lastName?.trim() || generated.lastName,
     countryCode: input.countryCode,
@@ -101,6 +103,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     captain: false,
     ballonsAttempts: 0,
     nationalTeamDoorClosed: false,
+    coachingPathStarted: false,
 
     careerGoals: 0,
     careerAssists: 0,
@@ -260,7 +263,7 @@ export function resolveMidSeasonToSeasonSim(state: PlayerState): void {
 export function acceptTournamentInvite(state: PlayerState): void {
   const invite = state.pendingTournamentInvite;
   if (!invite) return;
-  startTournament(state, invite.tournamentName);
+  startTournament(state, invite.tournamentName, invite.kind);
 }
 
 export function declineTournamentInvite(state: PlayerState): void {

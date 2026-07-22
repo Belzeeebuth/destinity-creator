@@ -34,6 +34,9 @@ import {
   type GiftTierId,
 } from '../engine/finance';
 import type { StatDelta } from '../engine/diff';
+import type { Language } from '../i18n/language';
+import { loadLanguage, saveLanguage } from '../i18n/language';
+import { GLOBAL_TOURNAMENT_NAME } from '../data/awards';
 
 const CAREER_STORAGE_KEY = 'destiny11_career_v1';
 
@@ -53,6 +56,14 @@ function loadCareer(): PlayerState | null {
     parsed.relationship ??= { status: 'celibataire', partnerName: null, since: parsed.season ?? 1, happiness: 50 };
     parsed.prestigeAssets ??= [];
     parsed.reputationShield ??= 0;
+    parsed.language ??= 'fr';
+    parsed.coachingPathStarted ??= parsed.awards?.includes('Formation entraîneur entamée') ?? false;
+    if (parsed.pendingTournamentInvite && !parsed.pendingTournamentInvite.kind) {
+      parsed.pendingTournamentInvite.kind = parsed.pendingTournamentInvite.tournamentName === GLOBAL_TOURNAMENT_NAME ? 'global' : 'continental';
+    }
+    if (parsed.activeTournament && !parsed.activeTournament.kind) {
+      parsed.activeTournament.kind = parsed.activeTournament.tournamentName === GLOBAL_TOURNAMENT_NAME ? 'global' : 'continental';
+    }
     return parsed;
   } catch {
     return null;
@@ -76,6 +87,8 @@ export interface CareerEndSummary {
 }
 
 interface GameStore {
+  language: Language;
+  setLanguage: (lang: Language) => void;
   career: PlayerState | null;
   activeEventChoices: EventChoiceOutcome[] | null;
   lastEventResult: string | null;
@@ -117,6 +130,18 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
+  language: loadLanguage(),
+  setLanguage: (lang) => {
+    saveLanguage(lang);
+    const { career } = get();
+    if (career) {
+      career.language = lang;
+      saveCareer(career);
+      set({ language: lang, career: { ...career } });
+      return;
+    }
+    set({ language: lang });
+  },
   career: loadCareer(),
   activeEventChoices: null,
   lastEventResult: null,
@@ -129,7 +154,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startCareer: (input) => {
     const meta = get().meta;
-    const career = CareerEngine.createCareer({ ...input, advantageLevels: meta.advantageLevels });
+    const language = get().language;
+    const career = CareerEngine.createCareer({ ...input, language, advantageLevels: meta.advantageLevels });
     saveCareer(career);
     const nextMeta = incrementCareersPlayed(meta);
     saveMeta(nextMeta);

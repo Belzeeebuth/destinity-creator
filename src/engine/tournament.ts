@@ -5,6 +5,7 @@
 import type {
   PlayerState,
   PendingTournamentInvite,
+  TournamentKind,
   TournamentState,
   TournamentMatchResult,
   TournamentMatchTimelineEvent,
@@ -15,9 +16,9 @@ import { overallRating } from './types';
 import { COUNTRIES, getCountry, type CountryTier } from '../data/countries';
 import type { Position } from '../data/positions';
 import { randomName } from '../data/names';
-import { GLOBAL_TOURNAMENT_NAME, CONTINENTAL_TOURNAMENT_NAME } from '../data/awards';
+import { GLOBAL_TOURNAMENT_NAME, GLOBAL_TOURNAMENT_NAME_EN, CONTINENTAL_TOURNAMENT_NAME, CONTINENTAL_TOURNAMENT_NAME_EN } from '../data/awards';
 import { nextFloat, nextInt, nextChance, rngFromCarrier } from './rng';
-import { clamp, adjustReputation } from './util';
+import { clamp, adjustReputation, loc } from './util';
 
 const TIER_STRENGTH: Record<CountryTier, number> = { S: 9, A: 7, B: 5, C: 3, D: 1.5 };
 
@@ -30,17 +31,19 @@ function computeOverall(state: PlayerState, position: Position): number {
 export function checkTournamentEligibility(state: PlayerState, position: Position): PendingTournamentInvite | null {
   if (state.caps === 0) return null;
   const cycle = state.season % 4;
-  let tournamentName: string | null = null;
-  if (cycle === 0) tournamentName = GLOBAL_TOURNAMENT_NAME;
-  else if (cycle === 2) tournamentName = CONTINENTAL_TOURNAMENT_NAME;
-  if (!tournamentName) return null;
+  let kind: TournamentKind | null = null;
+  if (cycle === 0) kind = 'global';
+  else if (cycle === 2) kind = 'continental';
+  if (!kind) return null;
+  const tournamentName =
+    kind === 'global' ? loc(state, GLOBAL_TOURNAMENT_NAME, GLOBAL_TOURNAMENT_NAME_EN) : loc(state, CONTINENTAL_TOURNAMENT_NAME, CONTINENTAL_TOURNAMENT_NAME_EN);
 
   const country = getCountry(state.countryCode);
   const overall = computeOverall(state, position);
   const selectionChance = clamp(0.2 + state.reputation / 150 + country.nationalTeamAccess / 20 + overall / 400, 0.05, 0.97);
   if (!nextChance(state, selectionChance)) return null;
 
-  return { tournamentName };
+  return { tournamentName, kind };
 }
 
 // ---------------- Tirage et démarrage ----------------
@@ -66,7 +69,7 @@ function pickOpponents(state: PlayerState, exclude: string[], count: number): st
   return chosen;
 }
 
-export function startTournament(state: PlayerState, tournamentName: string): void {
+export function startTournament(state: PlayerState, tournamentName: string, kind: TournamentKind): void {
   const opponents = pickOpponents(state, [state.countryCode], 3);
   const playerCountry = getCountry(state.countryCode);
 
@@ -77,6 +80,7 @@ export function startTournament(state: PlayerState, tournamentName: string): voi
 
   state.activeTournament = {
     tournamentName,
+    kind,
     stage: 'groupes',
     groupOpponents: opponents,
     groupMatchIndex: 0,
@@ -437,7 +441,10 @@ function finalizeTournament(state: PlayerState, position: Position): void {
   const bestPlayerRank = 1 + rivals.filter((r) => r.avgRating > avgPlayerRating).length;
 
   const overall = computeOverall(state, position);
-  adjustReputation(state, t.champion ? 16 : t.stage === 'termine' && !t.eliminated ? 10 : t.finalStageLabel.includes('finale') ? 8 : 3);
+  // t.matches.length > groupOpponents.length signifie qu'au moins un match à élimination directe a
+  // été disputé (indépendant de la langue du libellé affiché, contrairement à un test sur le texte).
+  const reachedKnockouts = t.matches.length > t.groupOpponents.length;
+  adjustReputation(state, t.champion ? 16 : reachedKnockouts ? 8 : 3);
 
   if (t.champion) {
     state.trophies.push(`${t.tournamentName} — saison ${state.season} (sélection ${playerCountry.name})`);

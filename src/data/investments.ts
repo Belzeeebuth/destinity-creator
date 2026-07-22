@@ -3,9 +3,11 @@ import type { InvestmentId } from '../engine/types';
 export interface InvestmentDefinition {
   id: InvestmentId;
   name: string;
+  nameEn: string;
   symbol?: string; // ticker, pour les cryptos
   emoji: string;
   description: string;
+  descriptionEn: string;
   category: 'traditionnel' | 'crypto';
   baseVolatility: number; // amplitude de base des variations annuelles autour du rendement moyen
   baseMeanReturn: number; // rendement moyen de base attendu par saison (0.05 = +5%)
@@ -20,8 +22,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'livret',
     name: 'Livret sécurisé',
+    nameEn: 'Secured savings account',
     emoji: '🏦',
     description: 'Rendement faible mais garanti : aucune perte possible, pour dormir tranquille.',
+    descriptionEn: 'Low but guaranteed return: no possible loss, so you can sleep soundly.',
     category: 'traditionnel',
     baseVolatility: 0,
     baseMeanReturn: 0.02,
@@ -31,8 +35,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'obligations',
     name: "Obligations d'État",
+    nameEn: 'Government bonds',
     emoji: '📜',
     description: 'Prêt à un État : rendement modeste mais très prévisible, quasiment sans surprise.',
+    descriptionEn: 'A loan to a state: modest return but very predictable, almost no surprises.',
     category: 'traditionnel',
     baseVolatility: 0.03,
     baseMeanReturn: 0.035,
@@ -42,8 +48,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'or',
     name: 'Or & métaux précieux',
+    nameEn: 'Gold & precious metals',
     emoji: '🥇',
     description: 'Valeur refuge historique, progresse doucement et amortit les tempêtes des autres marchés.',
+    descriptionEn: 'A historic safe haven, grows slowly and cushions the storms of other markets.',
     category: 'traditionnel',
     baseVolatility: 0.1,
     baseMeanReturn: 0.04,
@@ -53,8 +61,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'immobilier',
     name: 'Immobilier locatif',
+    nameEn: 'Rental property',
     emoji: '🏠',
     description: "Valeur qui s'apprécie lentement et régulièrement, avec un risque de marché occasionnel.",
+    descriptionEn: 'A value that appreciates slowly and steadily, with the occasional market risk.',
     category: 'traditionnel',
     baseVolatility: 0.06,
     baseMeanReturn: 0.05,
@@ -64,8 +74,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'actions',
     name: 'Actions & fonds',
+    nameEn: 'Stocks & funds',
     emoji: '📈',
     description: 'Rendement correct sur la durée, mais des années plus creuses restent possibles.',
+    descriptionEn: 'Decent return over time, but leaner years remain possible.',
     category: 'traditionnel',
     baseVolatility: 0.15,
     baseMeanReturn: 0.07,
@@ -75,8 +87,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'art',
     name: 'Art & objets de collection',
+    nameEn: 'Art & collectibles',
     emoji: '🖼️',
     description: "Marché de niche, peu liquide, où l'engouement peut faire s'envoler ou stagner une pièce.",
+    descriptionEn: 'A niche, illiquid market, where hype can send a piece soaring or leave it stagnant.',
     category: 'traditionnel',
     baseVolatility: 0.22,
     baseMeanReturn: 0.06,
@@ -86,8 +100,10 @@ export const TRADITIONAL_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'startups',
     name: 'Capital-risque / startups',
+    nameEn: 'Venture capital / startups',
     emoji: '🚀',
     description: "Miser sur de jeunes entreprises : le jackpot ou la perte quasi totale, sans juste milieu.",
+    descriptionEn: 'Betting on young companies: the jackpot or near-total loss, no middle ground.',
     category: 'traditionnel',
     baseVolatility: 0.5,
     baseMeanReturn: 0.18,
@@ -103,9 +119,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'bitcoin',
     name: 'Bitcoin',
+    nameEn: 'Bitcoin',
     symbol: 'BTC',
     emoji: '₿',
     description: "La plus établie des cryptomonnaies. Volatile, mais relativement le moins agité du marché.",
+    descriptionEn: 'The most established cryptocurrency. Volatile, but relatively the calmest of the market.',
     category: 'crypto',
     baseVolatility: 0.35,
     baseMeanReturn: 0.14,
@@ -115,9 +133,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'ethereum',
     name: 'Ethereum',
+    nameEn: 'Ethereum',
     symbol: 'ETH',
     emoji: 'Ξ',
     description: 'Deuxième capitalisation du marché, portée par ses contrats intelligents.',
+    descriptionEn: 'Second-largest market cap, driven by its smart contracts.',
     category: 'crypto',
     baseVolatility: 0.42,
     baseMeanReturn: 0.13,
@@ -127,9 +147,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'solana',
     name: 'Solana',
+    nameEn: 'Solana',
     symbol: 'SOL',
     emoji: '◎',
     description: 'Rapide et populaire, mais réputée pour ses envolées et ses chutes spectaculaires.',
+    descriptionEn: 'Fast and popular, but known for its spectacular surges and crashes.',
     category: 'crypto',
     baseVolatility: 0.55,
     baseMeanReturn: 0.16,
@@ -139,9 +161,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'bnb',
     name: 'BNB',
+    nameEn: 'BNB',
     symbol: 'BNB',
     emoji: '🔶',
     description: "Adossée à l'une des plus grandes plateformes d'échange, relativement disciplinée.",
+    descriptionEn: 'Backed by one of the largest exchange platforms, relatively disciplined.',
     category: 'crypto',
     baseVolatility: 0.4,
     baseMeanReturn: 0.1,
@@ -151,9 +175,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'xrp',
     name: 'XRP',
+    nameEn: 'XRP',
     symbol: 'XRP',
     emoji: '✕',
     description: 'Orientée paiements internationaux, sujette à des à-coups réglementaires.',
+    descriptionEn: 'Focused on international payments, subject to regulatory jolts.',
     category: 'crypto',
     baseVolatility: 0.45,
     baseMeanReturn: 0.08,
@@ -163,9 +189,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'cardano',
     name: 'Cardano',
+    nameEn: 'Cardano',
     symbol: 'ADA',
     emoji: '🔷',
     description: 'Développement académique et prudent, progression plus lente mais plus posée.',
+    descriptionEn: 'Academic and cautious development, slower but steadier progress.',
     category: 'crypto',
     baseVolatility: 0.5,
     baseMeanReturn: 0.09,
@@ -175,9 +203,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'polkadot',
     name: 'Polkadot',
+    nameEn: 'Polkadot',
     symbol: 'DOT',
     emoji: '⚫',
     description: 'Vise à connecter plusieurs blockchains entre elles. Encore jeune, encore instable.',
+    descriptionEn: 'Aims to connect multiple blockchains together. Still young, still unstable.',
     category: 'crypto',
     baseVolatility: 0.48,
     baseMeanReturn: 0.09,
@@ -187,9 +217,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'litecoin',
     name: 'Litecoin',
+    nameEn: 'Litecoin',
     symbol: 'LTC',
     emoji: '🪙',
     description: "Un des plus anciens dérivés du Bitcoin, réputé pour sa relative stabilité du genre.",
+    descriptionEn: 'One of the oldest Bitcoin derivatives, known for its relative stability for the category.',
     category: 'crypto',
     baseVolatility: 0.38,
     baseMeanReturn: 0.07,
@@ -199,9 +231,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'chainlink',
     name: 'Chainlink',
+    nameEn: 'Chainlink',
     symbol: 'LINK',
     emoji: '🔗',
     description: 'Connecte les blockchains au monde réel. Utilité technique reconnue, cours nerveux.',
+    descriptionEn: 'Connects blockchains to the real world. Recognized technical utility, jittery price.',
     category: 'crypto',
     baseVolatility: 0.5,
     baseMeanReturn: 0.11,
@@ -211,9 +245,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'avalanche',
     name: 'Avalanche',
+    nameEn: 'Avalanche',
     symbol: 'AVAX',
     emoji: '🏔️',
     description: 'Blockchain rapide en pleine expansion, portée par des cycles de hype marqués.',
+    descriptionEn: 'A fast, expanding blockchain, driven by pronounced hype cycles.',
     category: 'crypto',
     baseVolatility: 0.58,
     baseMeanReturn: 0.13,
@@ -223,9 +259,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'toncoin',
     name: 'Toncoin',
+    nameEn: 'Toncoin',
     symbol: 'TON',
     emoji: '💎',
     description: "Adossé à une messagerie utilisée par des centaines de millions de personnes.",
+    descriptionEn: 'Backed by a messaging app used by hundreds of millions of people.',
     category: 'crypto',
     baseVolatility: 0.52,
     baseMeanReturn: 0.12,
@@ -235,9 +273,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'tron',
     name: 'Tron',
+    nameEn: 'Tron',
     symbol: 'TRX',
     emoji: '⚡',
     description: 'Très utilisé pour les transferts rapides, un cours étonnamment discipliné pour la catégorie.',
+    descriptionEn: 'Widely used for fast transfers, a price surprisingly disciplined for the category.',
     category: 'crypto',
     baseVolatility: 0.44,
     baseMeanReturn: 0.07,
@@ -247,9 +287,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'dogecoin',
     name: 'Dogecoin',
+    nameEn: 'Dogecoin',
     symbol: 'DOGE',
     emoji: '🐕',
     description: "Née comme une blague, portée par les réseaux sociaux plus que par les fondamentaux.",
+    descriptionEn: 'Born as a joke, driven by social media more than fundamentals.',
     category: 'crypto',
     baseVolatility: 0.7,
     baseMeanReturn: 0.05,
@@ -259,9 +301,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'shiba_inu',
     name: 'Shiba Inu',
+    nameEn: 'Shiba Inu',
     symbol: 'SHIB',
     emoji: '🐶',
     description: "Autre mème devenu phénomène de masse. Des pics fulgurants, des chutes tout aussi brutales.",
+    descriptionEn: 'Another meme turned mass phenomenon. Blazing spikes, equally brutal crashes.',
     category: 'crypto',
     baseVolatility: 0.75,
     baseMeanReturn: 0.04,
@@ -271,9 +315,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'pepe',
     name: 'Pepe',
+    nameEn: 'Pepe',
     symbol: 'PEPE',
     emoji: '🐸',
     description: "Mème-coin ultra spéculatif porté par les réseaux sociaux, aucune valeur fondamentale.",
+    descriptionEn: 'An ultra-speculative meme coin driven by social media, no fundamental value.',
     category: 'crypto',
     baseVolatility: 0.85,
     baseMeanReturn: 0.03,
@@ -283,9 +329,11 @@ export const CRYPTO_INVESTMENTS: InvestmentDefinition[] = [
   {
     id: 'moonshiba',
     name: 'MoonShiba (mème-coin fictif)',
+    nameEn: 'MoonShiba (fictional meme coin)',
     symbol: 'MSHB',
     emoji: '🚀',
     description: 'Un actif totalement fictif et ultra-spéculatif : jackpot ou anéantissement total.',
+    descriptionEn: 'A fully fictional, ultra-speculative asset: jackpot or total wipeout.',
     category: 'crypto',
     baseVolatility: 0.95,
     baseMeanReturn: 0.02,

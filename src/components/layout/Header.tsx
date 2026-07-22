@@ -1,16 +1,19 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useGameStore } from '../../state/store';
-
-const NAV_ITEMS = [
-  { to: '/boutique', icon: '🛒', label: 'Boutique' },
-  { to: '/badges', icon: '🏅', label: 'Badges' },
-  { to: '/pantheon', icon: '🏛️', label: 'Panthéon' },
-];
+import { ui } from '../../i18n/ui';
 
 export default function Header() {
   const location = useLocation();
   const career = useGameStore((s) => s.career);
-  const navItems = career && !career.retired ? [{ to: '/patrimoine', icon: '💰', label: 'Patrimoine' }, ...NAV_ITEMS] : NAV_ITEMS;
+  const language = useGameStore((s) => s.language);
+  const setLanguage = useGameStore((s) => s.setLanguage);
+  const navItems = [
+    { to: '/boutique', icon: '🛒', label: ui(language, 'navShop') },
+    { to: '/badges', icon: '🏅', label: ui(language, 'navBadges') },
+    { to: '/pantheon', icon: '🏛️', label: ui(language, 'navPantheon') },
+  ];
+  const allNavItems =
+    career && !career.retired ? [{ to: '/patrimoine', icon: '💰', label: ui(language, 'navWealth') }, ...navItems] : navItems;
   return (
     <header className="sticky top-0 z-40 border-b border-pitch-600/40 bg-pitch-950/85 shadow-[0_8px_24px_-16px_rgba(0,0,0,0.8)] backdrop-blur-md">
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
@@ -33,7 +36,7 @@ export default function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-1 sm:gap-2">
-          {navItems.map((item) => {
+          {allNavItems.map((item) => {
             const active = location.pathname === item.to;
             return (
               <Link
@@ -51,6 +54,28 @@ export default function Header() {
               </Link>
             );
           })}
+          <div className="ml-1 flex items-center gap-0.5 rounded-full bg-white/5 p-0.5 sm:ml-2">
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`rounded-full px-2 py-1 text-xs font-semibold transition ${
+                language === 'fr' ? 'bg-gold-500/20 text-gold-400' : 'text-ink-500 hover:text-ink-200'
+              }`}
+              aria-label="Français"
+              title="Français"
+            >
+              FR
+            </button>
+            <button
+              onClick={() => setLanguage('en')}
+              className={`rounded-full px-2 py-1 text-xs font-semibold transition ${
+                language === 'en' ? 'bg-gold-500/20 text-gold-400' : 'text-ink-500 hover:text-ink-200'
+              }`}
+              aria-label="English"
+              title="English"
+            >
+              EN
+            </button>
+          </div>
         </nav>
       </div>
     </header>

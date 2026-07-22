@@ -3,7 +3,6 @@ import type { PlayerState } from '../../engine/types';
 import { useGameStore } from '../../state/store';
 import { getCountry } from '../../data/countries';
 import { getAgent } from '../../data/agents';
-import { GLOBAL_TOURNAMENT_NAME } from '../../data/awards';
 import CountryFlag from '../ui/CountryFlag';
 
 type Advisor = 'agent' | 'famille' | 'entraineur';
@@ -38,9 +37,9 @@ export default function TournamentInvitePanel({ career }: { career: PlayerState 
   const [advice, setAdvice] = useState<{ from: Advisor; text: string } | null>(null);
 
   if (!career.pendingTournamentInvite) return null;
-  const { tournamentName } = career.pendingTournamentInvite;
+  const { tournamentName, kind } = career.pendingTournamentInvite;
   const country = getCountry(career.countryCode);
-  const isWorldCup = tournamentName === GLOBAL_TOURNAMENT_NAME;
+  const isWorldCup = kind === 'global';
 
   function ask(advisor: Advisor) {
     setAdvice({ from: advisor, text: buildAdvice(career, advisor) });

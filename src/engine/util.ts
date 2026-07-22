@@ -48,6 +48,13 @@ export function adjustFitness(state: PlayerState, delta: number): void {
   state.fitness = clamp(Math.round(state.fitness + delta), 0, 100);
 }
 
+// Sélectionne le texte français ou anglais selon la langue de la carrière : chaque récit
+// d'évènement fournit ses deux versions côte à côte plutôt que de passer par un dictionnaire
+// de clés, ce qui garde les textes interpolés (noms de club, chiffres...) lisibles en un bloc.
+export function loc(state: PlayerState, fr: string, en: string): string {
+  return state.language === 'en' ? en : fr;
+}
+
 export function formatMoney(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(value % 1_000_000 === 0 ? 0 : 1)} M€`;
   if (value >= 1_000) return `${Math.round(value / 1000)} k€`;
