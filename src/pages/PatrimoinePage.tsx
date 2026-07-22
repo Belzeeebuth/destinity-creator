@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../state/store';
 import { TRADITIONAL_INVESTMENTS, CRYPTO_INVESTMENTS, type InvestmentDefinition } from '../data/investments';
+import { PRESTIGE_ASSETS } from '../data/prestige';
 import { GIFT_TIERS, riskLabel, type GiftTierId } from '../engine/finance';
 import type { InvestmentId, PlayerState } from '../engine/types';
 import { formatMoney } from '../engine/util';
@@ -35,6 +36,7 @@ export default function PatrimoinePage() {
       )}
       <TraditionalInvestmentsPanel career={career} />
       <CryptoPanel career={career} />
+      <PrestigePanel career={career} />
       <PersonalLifePanel career={career} />
     </div>
   );
@@ -268,6 +270,50 @@ function CryptoRow({
         </tr>
       )}
     </>
+  );
+}
+
+function PrestigePanel({ career }: { career: PlayerState }) {
+  const purchasePrestigeAsset = useGameStore((s) => s.purchasePrestigeAsset);
+
+  return (
+    <div className="card p-5">
+      <h2 className="font-display text-xl text-ink-100">🏆 Prestige</h2>
+      <p className="mt-1 text-sm text-ink-300">
+        Des achats uniques et durables : certains font grimper ta réputation d'un coup, d'autres t'aident à encaisser les
+        prochains coups durs médiatiques.
+      </p>
+      {career.reputationShield > 0 && (
+        <p className="mt-2 text-xs text-gold-400">
+          🛡️ Bouclier de réputation actif : -{Math.round(career.reputationShield * 100)}% sur tes futures pertes de réputation.
+        </p>
+      )}
+
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {PRESTIGE_ASSETS.map((asset) => {
+          const owned = career.prestigeAssets.includes(asset.id);
+          const canAfford = career.savings >= asset.cost;
+          return (
+            <div key={asset.id} className={`flex flex-col gap-2 rounded-lg border p-4 ${owned ? 'border-gold-500/50' : 'border-white/10'}`}>
+              <span className="font-display text-lg text-ink-100">
+                {asset.emoji} {asset.name}
+              </span>
+              <span className="w-fit rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold text-ink-300">
+                {asset.effect === 'permanent_reputation' ? `+${asset.value} Réputation` : `Bouclier -${Math.round(asset.value * 100)}%`}
+              </span>
+              <p className="text-xs text-ink-400">{asset.description}</p>
+              <button
+                onClick={() => purchasePrestigeAsset(asset.id)}
+                disabled={owned || !canAfford}
+                className={`mt-1 w-full rounded-full py-1.5 text-xs disabled:opacity-40 ${owned ? 'btn-gold' : 'btn-outline'}`}
+              >
+                {owned ? 'Déjà acquis ✓' : `Acheter (${formatMoney(asset.cost)})`}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

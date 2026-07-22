@@ -1,4 +1,4 @@
-import type { PlayerState, SeasonRecord, TransferOffer } from './types';
+import type { PlayerState, PlayStyle, SeasonRecord, TransferOffer } from './types';
 import { overallRating } from './types';
 import type { Country } from '../data/countries';
 import type { Position } from '../data/positions';
@@ -110,7 +110,29 @@ export interface SeasonSimResult {
 
 const SEASON_LENGTH = 34;
 
-export function simulateSeason(state: PlayerState, country: Country, position: Position): SeasonSimResult {
+// Style de jeu choisi en début de saison : donne une prise stratégique directe sur les résultats
+// plutôt que de subir passivement un tirage neutre.
+interface PlayStyleModifiers {
+  goalFactor: number; // multiplicateur sur les buts/passes décisives
+  cardRiskFactor: number; // multiplicateur sur le risque de cartons
+  injuryRiskFactor: number; // multiplicateur sur le risque de blessure
+  cleanSheetBonus: number; // additif sur la chance de clean sheet (gardiens)
+  ratingBonus: number; // additif sur la note moyenne
+}
+
+const PLAYSTYLE_MODIFIERS: Record<PlayStyle, PlayStyleModifiers> = {
+  offensif: { goalFactor: 1.3, cardRiskFactor: 1.25, injuryRiskFactor: 1.15, cleanSheetBonus: -0.05, ratingBonus: 0 },
+  defensif: { goalFactor: 0.75, cardRiskFactor: 0.8, injuryRiskFactor: 0.85, cleanSheetBonus: 0.08, ratingBonus: 0.15 },
+  equilibre: { goalFactor: 1, cardRiskFactor: 1, injuryRiskFactor: 1, cleanSheetBonus: 0, ratingBonus: 0 },
+};
+
+export function simulateSeason(
+  state: PlayerState,
+  country: Country,
+  position: Position,
+  playStyle: PlayStyle = 'equilibre',
+): SeasonSimResult {
+  const style = PLAYSTYLE_MODIFIERS[playStyle];
   const narrative: string[] = [];
   const overall = computeOverall(state, position);
   const clubTier = resolveClubTier(state.club);
@@ -128,7 +150,7 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
   // ---- Blessures typées : réduisent le temps de jeu, avec risque de séquelle définitive ----
   const injuryShield = state.advantageEffects.injury_shield ?? 0;
   const injuryChance = clamp(
-    (0.16 + (100 - state.fitness) / 260 + (100 - country.infrastructure * 10) / 900) * (1 - injuryShield),
+    (0.16 + (100 - state.fitness) / 260 + (100 - country.infrastructure * 10) / 900) * (1 - injuryShield) * style.injuryRiskFactor,
     0.03,
     0.55,
   );
@@ -153,9 +175,9 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
 
   // ---- Cartons et suspensions ----
   const cardProneness = position.weights.defense / 4 + (1 - state.discipline / 100);
-  const expectedYellows = (appearances / SEASON_LENGTH) * (1.5 + cardProneness * 5);
+  const expectedYellows = (appearances / SEASON_LENGTH) * (1.5 + cardProneness * 5) * style.cardRiskFactor;
   const cardsYellow = Math.max(0, Math.round(expectedYellows * (0.6 + nextFloat(state) * 0.7)));
-  const redChance = clamp(0.03 + (1 - state.discipline / 100) * 0.07, 0.01, 0.18);
+  const redChance = clamp(0.03 + (1 - state.discipline / 100) * 0.07, 0.01, 0.18) * style.cardRiskFactor;
   let cardsRed = 0;
   if (appearances > 0 && nextChance(state, redChance)) {
     cardsRed = 1;
@@ -165,7 +187,7 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
   }
 
   // Note moyenne : proche de 6.5 en cas d'équilibre, monte si tu domines ton niveau.
-  const avgRating = clamp(6.2 + levelGap / 22 + (nextFloat(state) - 0.5) * 0.6, 3.5, 9.6);
+  const avgRating = clamp(6.2 + levelGap / 22 + style.ratingBonus + (nextFloat(state) - 0.5) * 0.6, 3.5, 9.6);
 
   let goals = 0;
   let assists = 0;
@@ -173,7 +195,7 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
   let saves = 0;
 
   if (position.code === 'GK') {
-    const cleanSheetChance = clamp(0.22 + levelGap / 140 + state.attributes.mental / 400, 0.05, 0.65);
+    const cleanSheetChance = clamp(0.22 + levelGap / 140 + state.attributes.mental / 400 + style.cleanSheetBonus, 0.05, 0.65);
     for (let m = 0; m < appearances; m++) if (nextChance(state, cleanSheetChance)) cleanSheets++;
     saves = Math.round(appearances * (2.2 + (state.attributes.reflexes / 99) * 4.5) * (0.8 + nextFloat(state) * 0.4));
     if (nextChance(state, 0.01)) goals = 1; // but exceptionnel de gardien
@@ -181,9 +203,9 @@ export function simulateSeason(state: PlayerState, country: Country, position: P
   } else {
     const attackWeight = position.weights.tir + position.weights.technique * 0.4;
     const goalFactor = (attackWeight / 4) * (state.attributes.tir / 99) * (appearances / SEASON_LENGTH);
-    goals = Math.max(0, Math.round(goalFactor * 26 * (0.7 + nextFloat(state) * 0.6)));
+    goals = Math.max(0, Math.round(goalFactor * 26 * (0.7 + nextFloat(state) * 0.6) * style.goalFactor));
     const assistFactor = (position.weights.passe + position.weights.vision * 0.6) / 4;
-    assists = Math.max(0, Math.round(assistFactor * (state.attributes.passe / 99) * (appearances / SEASON_LENGTH) * 18 * (0.7 + nextFloat(state) * 0.6)));
+    assists = Math.max(0, Math.round(assistFactor * (state.attributes.passe / 99) * (appearances / SEASON_LENGTH) * 18 * (0.7 + nextFloat(state) * 0.6) * style.goalFactor));
   }
 
   // Réputation et valeur marchande évoluent avec la performance et l'exposition du club.
@@ -353,6 +375,7 @@ interface NationalTeamResult {
 function simulateNationalTeam(state: PlayerState, country: Country, overall: number): NationalTeamResult {
   const narrative: string[] = [];
   if (state.age < 17) return { capsGained: 0, capGoals: 0, narrative };
+  if (state.nationalTeamDoorClosed) return { capsGained: 0, capGoals: 0, narrative };
 
   // Score de sélectionnabilité : ton niveau relatif + la facilité d'accès du pays.
   const selectionScore = overall * 0.5 + state.reputation * 0.3 + country.nationalTeamAccess * 5 - country.competition * 3;

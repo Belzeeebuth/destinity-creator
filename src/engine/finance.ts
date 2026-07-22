@@ -1,7 +1,8 @@
 import type { InvestmentId, MarketAssetProfile, PlayerState } from './types';
 import { INVESTMENTS, getInvestmentDefinition } from '../data/investments';
+import { getPrestigeAsset } from '../data/prestige';
 import { nextFloat, nextChance } from './rng';
-import { clamp, adjustMorale, formatMoney } from './util';
+import { clamp, adjustMorale, adjustReputation, formatMoney } from './util';
 
 // Tire le profil de risque/rendement effectif de chaque actif POUR CETTE CARRIÈRE, à partir de ses
 // valeurs de base, en appliquant un facteur aléatoire propre à la partie (sauf le livret, garanti) :
@@ -116,4 +117,24 @@ export function giftPartner(state: PlayerState, tierId: GiftTierId): string {
   state.relationship.happiness = clamp(state.relationship.happiness + tier.effect, 0, 100);
   adjustMorale(state, Math.round(tier.effect / 2));
   return `Tu gâtes ${state.relationship.partnerName} avec un ${tier.label.toLowerCase()} (-${formatMoney(tier.cost)}, +Moral, +Complicité).`;
+}
+
+// Achat unique de prestige (résidence, objet...), financé par l'épargne : soit un gain de réputation
+// immédiat et permanent, soit un bouclier qui amortit durablement les futures pertes de réputation.
+export function purchasePrestigeAsset(state: PlayerState, assetId: string): string {
+  const asset = getPrestigeAsset(assetId);
+  if (!asset) return 'Actif de prestige inconnu.';
+  if (state.prestigeAssets.includes(assetId)) return 'Tu possèdes déjà cet actif.';
+  if (state.savings < asset.cost) return 'Épargne insuffisante pour cet achat.';
+
+  state.savings -= asset.cost;
+  state.prestigeAssets.push(assetId);
+
+  if (asset.effect === 'permanent_reputation') {
+    adjustReputation(state, asset.value);
+    return `${asset.emoji} ${asset.name} acquis : ton prestige grimpe aussitôt (+${asset.value} Réputation, -${formatMoney(asset.cost)}).`;
+  }
+
+  state.reputationShield = clamp(state.reputationShield + asset.value, 0, 0.6);
+  return `${asset.emoji} ${asset.name} acquis : un bouclier de réputation t'aidera désormais à encaisser les coups durs médiatiques (-${formatMoney(asset.cost)}).`;
 }

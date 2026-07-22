@@ -9,7 +9,7 @@ import { rollEvent } from '../data/events';
 import { rollMidSeasonEvent } from '../data/midSeasonEvents';
 import { resolveEquippedEffects } from '../data/shop';
 import { resolveClubTier } from '../data/clubs';
-import type { EventChoiceOutcome, PlayerState, TournamentMatchResult } from './types';
+import type { EventChoiceOutcome, PlayerState, PlayStyle, TournamentMatchResult } from './types';
 import { MAX_AGE, START_AGE } from './types';
 import { initializeAttributes, growSeason } from './attributes';
 import { generateOffers, simulateSeason } from './simulate';
@@ -100,6 +100,7 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     capGoals: 0,
     captain: false,
     ballonsAttempts: 0,
+    nationalTeamDoorClosed: false,
 
     careerGoals: 0,
     careerAssists: 0,
@@ -123,6 +124,8 @@ export function createCareer(input: CreateCareerInput): PlayerState {
     investments: {},
     marketProfile: {} as PlayerState['marketProfile'],
     relationship: { status: 'celibataire', partnerName: null, since: 1, happiness: 50 },
+    prestigeAssets: [],
+    reputationShield: 0,
 
     history: [],
     seenClubNames: [],
@@ -257,10 +260,10 @@ export function continueAfterTournament(state: PlayerState): void {
 
 // ---------------- Phase : simulation de la saison ----------------
 
-export function runSeasonSim(state: PlayerState): void {
+export function runSeasonSim(state: PlayerState, playStyle: PlayStyle = 'equilibre'): void {
   const country = getCountry(state.countryCode);
   const position = getPosition(state.positionCode);
-  const { record, narrative } = simulateSeason(state, country, position);
+  const { record, narrative } = simulateSeason(state, country, position, playStyle);
   state.history.push(record);
 
   // ---- Vie personnelle : épargne accumulée sur le salaire net, puis évolution du portefeuille ----

@@ -83,7 +83,12 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Garder les études en parallèle',
-          apply: (s) => { adjustDiscipline(s, 5); adjustAttribute(s, 'mental', 2); return 'Un plan B rassurant qui structure aussi ton mental.'; },
+          apply: (s) => {
+            adjustDiscipline(s, 5);
+            adjustAttribute(s, 'mental', 2);
+            adjustFitness(s, -5);
+            return 'Un plan B rassurant qui structure ton mental, mais le surmenage entre cours et entraînements se paie sur ta forme. (+Discipline, +Mental, -Forme)';
+          },
         },
         {
           label: 'Trouver un juste équilibre',
@@ -111,7 +116,15 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Faire comme si de rien n’était',
-          apply: (s) => { adjustMorale(s, 1); return 'Tu masques ton stress derrière une nonchalance affichée.'; },
+          apply: (s) => {
+            if (nextChance(s, 0.45)) {
+              adjustMorale(s, -8);
+              adjustDiscipline(s, -3);
+              return 'Le masque craque en plein match : la pression te submerge devant tout le monde. (-Moral, -Discipline)';
+            }
+            adjustMorale(s, 1);
+            return 'Tu masques ton stress derrière une nonchalance affichée.';
+          },
         },
       ],
     }),
@@ -155,7 +168,16 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Accepter, exposition immédiate',
-          apply: (s) => { adjustReputation(s, 6); adjustDiscipline(s, -5); return 'Ta notoriété grimpe, mais les distractions aussi. (+Réputation, -Discipline)'; },
+          apply: (s) => {
+            if (nextChance(s, 0.4)) {
+              adjustReputation(s, -6);
+              adjustDiscipline(s, -8);
+              return 'D’anciens posts refont surface et déclenchent un bad buzz retentissant. (-Réputation, -Discipline)';
+            }
+            adjustReputation(s, 6);
+            adjustDiscipline(s, -5);
+            return 'Ta notoriété grimpe, mais les distractions aussi. (+Réputation, -Discipline)';
+          },
         },
         {
           label: 'Refuser, rester concentré',
@@ -163,7 +185,15 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: "Négocier discrètement via l'agent",
-          apply: (s) => { adjustReputation(s, 3); return 'Un compromis raisonnable, sans excès de visibilité. (+Réputation)'; },
+          apply: (s) => {
+            const agent = getAgent(s.agentId);
+            if (agent.id === 'aucun') {
+              adjustReputation(s, -3);
+              return "Sans agent pour négocier à ta place, les échanges directs tournent court et ternissent un peu ton image. (-Réputation)";
+            }
+            adjustReputation(s, 3);
+            return `${agent.emoji} ${agent.name} trouve un compromis raisonnable, sans excès de visibilité. (+Réputation)`;
+          },
         },
       ],
     }),
@@ -179,7 +209,16 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: "Le défier frontalement à l'entraînement",
-          apply: (s) => { adjustAttribute(s, 'mental', 2); adjustAttribute(s, 'physique', 1); return 'Une rivalité saine qui tire ton niveau vers le haut. (+Mental, +Physique)'; },
+          apply: (s) => {
+            if (shielded(s, 0.35)) {
+              adjustFitness(s, -12);
+              adjustDiscipline(s, -3);
+              return 'Le duel dégénère en contact rude : petite blessure et remontrances du staff à la clé. (-Forme, -Discipline)';
+            }
+            adjustAttribute(s, 'mental', 2);
+            adjustAttribute(s, 'physique', 1);
+            return 'Une rivalité saine qui tire ton niveau vers le haut. (+Mental, +Physique)';
+          },
         },
         {
           label: "Proposer de s'entraider",
@@ -187,7 +226,7 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Aller voir le coach pour clarifier la hiérarchie',
-          apply: (s) => { adjustReputation(s, 2); adjustMorale(s, -2); return 'Une démarche qui ne plaît pas à tout le monde dans le vestiaire.'; },
+          apply: (s) => { adjustReputation(s, -3); adjustMorale(s, -5); return 'Le vestiaire te voit comme une balance : ta démarche se retourne contre toi. (-Réputation, -Moral)'; },
         },
       ],
     }),
@@ -249,7 +288,17 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: 'Hausser le ton publiquement',
-          apply: (s) => { adjustReputation(s, 5); adjustDiscipline(s, -6); return 'Ta sortie médiatique fait du bruit, pour le meilleur ou pour le pire. (+Réputation, -Discipline)'; },
+          apply: (s) => {
+            if (nextChance(s, 0.45)) {
+              s.nationalTeamDoorClosed = true;
+              adjustReputation(s, -12);
+              adjustMorale(s, -10);
+              return 'Le sélectionneur, vexé, ferme définitivement la porte de la sélection nationale. (-Réputation, -Moral)';
+            }
+            adjustReputation(s, 5);
+            adjustDiscipline(s, -6);
+            return 'Ta sortie médiatique fait du bruit, pour le meilleur ou pour le pire. (+Réputation, -Discipline)';
+          },
         },
         {
           label: 'Travailler en silence',
@@ -257,7 +306,15 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: "Faire jouer le réseau de l'agent",
-          apply: (s) => { adjustReputation(s, 2); return 'Des coups de fil discrets sont passés en coulisses. (+Réputation)'; },
+          apply: (s) => {
+            const agent = getAgent(s.agentId);
+            if (agent.id === 'aucun') {
+              adjustMorale(s, -4);
+              return "Sans agent pour porter ta cause en coulisses, la frustration retombe sur toi seul. (-Moral)";
+            }
+            adjustReputation(s, 2);
+            return `${agent.emoji} Des coups de fil discrets sont passés en coulisses par ${agent.name}. (+Réputation)`;
+          },
         },
       ],
     }),
@@ -299,7 +356,13 @@ const EVENTS: EventTemplate[] = [
         choices: [
           {
             label: 'Accepter le contrat',
-            apply: (s2) => { s2.marketValue += Math.round(bonus * 0.05); adjustReputation(s2, 4); adjustDiscipline(s2, -2); return `Un beau chèque de ${formatMoney(bonus)}, au prix de quelques heures de tournage en moins à l’entraînement.`; },
+            apply: (s2) => {
+              s2.savings += bonus;
+              s2.marketValue += Math.round(bonus * 0.05);
+              adjustReputation(s2, 4);
+              adjustDiscipline(s2, -2);
+              return `Un beau chèque de ${formatMoney(bonus)} crédité sur ton épargne, au prix de quelques heures de tournage en moins à l’entraînement.`;
+            },
           },
           {
             label: 'Refuser, rester focus sport',
@@ -320,7 +383,17 @@ const EVENTS: EventTemplate[] = [
       choices: [
         {
           label: "Mettre la pression via l'agent",
-          apply: (s) => { adjustReputation(s, 2); s.wage = Math.round(s.wage * 1.05); return "Ton représentant hausse le ton en coulisses. Le salaire est revu à la hausse."; },
+          apply: (s) => {
+            const agent = getAgent(s.agentId);
+            if (agent.id === 'aucun') {
+              adjustMorale(s, -4);
+              adjustReputation(s, -2);
+              return "Sans agent pour porter le dossier, tes propres démarches agacent la direction du club. (-Moral, -Réputation)";
+            }
+            adjustReputation(s, 2);
+            s.wage = Math.round(s.wage * 1.05);
+            return `${agent.emoji} ${agent.name} hausse le ton en coulisses. Le salaire est revu à la hausse. (+Réputation)`;
+          },
         },
         {
           label: 'Rester loyal, attendre',
@@ -328,7 +401,12 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Demander publiquement un transfert',
-          apply: (s) => { adjustReputation(s, 5); adjustDiscipline(s, -4); return 'Un coup d’éclat qui ne laisse personne indifférent. (+Réputation, -Discipline)'; },
+          apply: (s) => {
+            adjustReputation(s, -8);
+            adjustDiscipline(s, -4);
+            adjustMorale(s, -5);
+            return 'Un fan backlash immédiat éclate sur les réseaux : les supporters ne pardonnent pas ce coup d’éclat. (-Réputation, -Discipline, -Moral)';
+          },
         },
       ],
     }),
@@ -348,11 +426,20 @@ const EVENTS: EventTemplate[] = [
         },
         {
           label: 'Soutenir le vestiaire',
-          apply: (s) => { adjustMorale(s, 4); adjustDiscipline(s, -2); return 'Le groupe apprécie ta loyauté, le staff un peu moins.'; },
+          apply: (s) => {
+            if (nextChance(s, 0.4)) {
+              adjustDiscipline(s, -10);
+              adjustMorale(s, -6);
+              return 'Le coach sanctionne ta prise de position et t’écarte temporairement du groupe. (-Discipline, -Moral)';
+            }
+            adjustMorale(s, 4);
+            adjustDiscipline(s, -2);
+            return 'Le groupe apprécie ta loyauté, le staff un peu moins.';
+          },
         },
         {
           label: 'Soutenir le staff technique',
-          apply: (s) => { adjustDiscipline(s, 4); adjustMorale(s, -2); return 'Une position qui rassure l’encadrement.'; },
+          apply: (s) => { adjustDiscipline(s, 4); adjustMorale(s, -6); return 'Une position qui rassure l’encadrement, mais t’isole du reste du vestiaire. (+Discipline, -Moral)'; },
         },
       ],
     }),

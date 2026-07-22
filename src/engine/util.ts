@@ -27,8 +27,10 @@ export function adjustDiscipline(state: PlayerState, delta: number): void {
   state.discipline = clamp(Math.round(state.discipline + delta), 0, 100);
 }
 
+// Un bouclier de réputation (achat de prestige) amortit l'ampleur des pertes, jamais des gains.
 export function adjustReputation(state: PlayerState, delta: number): void {
-  state.reputation = clamp(Math.round(state.reputation + delta), 0, 100);
+  const shielded = delta < 0 ? delta * (1 - (state.reputationShield ?? 0)) : delta;
+  state.reputation = clamp(Math.round(state.reputation + shielded), 0, 100);
 }
 
 export function adjustFitness(state: PlayerState, delta: number): void {

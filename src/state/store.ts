@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { InvestmentId, PlayerState, EventChoiceOutcome, TournamentMatchResult } from '../engine/types';
+import type { InvestmentId, PlayerState, PlayStyle, EventChoiceOutcome, TournamentMatchResult } from '../engine/types';
 import type { AttributeKey } from '../data/positions';
 import * as CareerEngine from '../engine/career';
 import type { CreateCareerInput } from '../engine/career';
@@ -29,6 +29,7 @@ import {
   withdrawInvestment,
   giftFamily as giftFamilyEngine,
   giftPartner as giftPartnerEngine,
+  purchasePrestigeAsset as purchasePrestigeAssetEngine,
   fillMissingMarketProfile,
   type GiftTierId,
 } from '../engine/finance';
@@ -45,10 +46,13 @@ function loadCareer(): PlayerState | null {
     parsed.rival ??= null;
     parsed.firedOnceEventIds ??= [];
     parsed.savings ??= 0;
+    parsed.nationalTeamDoorClosed ??= false;
     parsed.investments ??= {};
     parsed.marketProfile ??= {} as PlayerState['marketProfile'];
     fillMissingMarketProfile(parsed, parsed.marketProfile);
     parsed.relationship ??= { status: 'celibataire', partnerName: null, since: parsed.season ?? 1, happiness: 50 };
+    parsed.prestigeAssets ??= [];
+    parsed.reputationShield ??= 0;
     return parsed;
   } catch {
     return null;
@@ -90,7 +94,7 @@ interface GameStore {
   playTournamentStep: () => void;
   acknowledgeTournamentMatch: () => void;
   continueAfterTournament: () => void;
-  runSeasonSim: () => void;
+  runSeasonSim: (playStyle?: PlayStyle) => void;
   acceptOffer: (index: number) => void;
   declineOffers: () => void;
   negotiateOffer: (index: number, aspect: CareerEngine.NegotiationAspect) => void;
@@ -109,6 +113,7 @@ interface GameStore {
   withdrawFromPortfolio: (id: InvestmentId) => void;
   giftFamily: (tierId: GiftTierId) => void;
   giftPartner: (tierId: GiftTierId) => void;
+  purchasePrestigeAsset: (assetId: string) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -209,10 +214,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ career: { ...career }, lastTournamentMatch: null });
   },
 
-  runSeasonSim: () => {
+  runSeasonSim: (playStyle) => {
     const { career } = get();
     if (!career) return;
-    CareerEngine.runSeasonSim(career);
+    CareerEngine.runSeasonSim(career, playStyle);
     saveCareer(career);
     set({ career: { ...career } });
   },
@@ -396,6 +401,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { career } = get();
     if (!career) return;
     const result = giftPartnerEngine(career, tierId);
+    saveCareer(career);
+    set({ career: { ...career }, lastFinanceResult: result });
+  },
+
+  purchasePrestigeAsset: (assetId) => {
+    const { career } = get();
+    if (!career) return;
+    const result = purchasePrestigeAssetEngine(career, assetId);
     saveCareer(career);
     set({ career: { ...career }, lastFinanceResult: result });
   },

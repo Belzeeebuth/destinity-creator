@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getPosition } from '../data/positions';
 import { useGameStore } from '../state/store';
 import CountryFlag from '../components/ui/CountryFlag';
+import OverallEvolutionChart from '../components/end/OverallEvolutionChart';
 
 export default function PantheonPage() {
   const pantheon = useGameStore((s) => s.meta.pantheon);
@@ -66,6 +67,11 @@ export default function PantheonPage() {
                             <li key={idx}>🏆 {t}</li>
                           ))}
                         </ul>
+                      </div>
+                    )}
+                    {entry.history.length > 1 && (
+                      <div className="mb-3">
+                        <OverallEvolutionChart history={entry.history} />
                       </div>
                     )}
                     {entry.history.length > 0 && (

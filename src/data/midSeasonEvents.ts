@@ -130,6 +130,91 @@ export const MID_SEASON_EVENTS: EventTemplate[] = [
       ],
     }),
   },
+  {
+    id: 'mid_season_coach_change',
+    minAge: 16,
+    maxAge: 45,
+    weight: (s) => (s.club ? 5 : 0),
+    build: () => ({
+      title: "Changement d'entraîneur en pleine saison",
+      text: "Sous la pression des résultats, le club limoge son entraîneur en plein cœur de saison. Un nouveau technicien débarque avec ses propres idées.",
+      choices: [
+        {
+          label: "S'adapter vite à ses méthodes",
+          apply: (s) => { adjustDiscipline(s, 3); adjustAttribute(s, 'vision', 1); return 'Tu montres l’exemple en adoptant vite la nouvelle philosophie de jeu. (+Discipline, +Vision)'; },
+        },
+        {
+          label: "Défendre les méthodes de l'ancien coach",
+          apply: (s) => { adjustDiscipline(s, -5); return 'Le nouveau staff note ta réticence au changement. (-Discipline)'; },
+        },
+        {
+          label: 'Rester neutre, attendre de voir',
+          apply: (s) => { adjustMorale(s, -3); return "L'incertitude sur la nouvelle hiérarchie pèse un peu sur tout le vestiaire. (-Moral)"; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'mid_season_teammate_injury',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.club ? 5 : 0),
+    build: () => ({
+      title: 'Blessure grave d’un cadre du vestiaire',
+      text: "Ton coéquipier le plus influent se blesse gravement à l'entraînement, bouleversant l'équilibre de toute l'équipe.",
+      choices: [
+        {
+          label: 'Prendre les responsabilités en plus sur le terrain',
+          apply: (s) => {
+            if (nextChance(s, 0.5)) {
+              adjustReputation(s, 5);
+              adjustFitness(s, -8);
+              return 'Tu hausses le ton et deviens un cadre plus important aux yeux de tous. (+Réputation, -Forme)';
+            }
+            adjustFitness(s, -14);
+            adjustMorale(s, -4);
+            return 'La charge de travail supplémentaire te pèse plus que prévu. (-Forme, -Moral)';
+          },
+        },
+        {
+          label: 'Soutenir moralement le groupe',
+          apply: (s) => { adjustMorale(s, 3); adjustAttribute(s, 'mental', 1); return 'Ta solidarité resserre les liens du groupe dans un moment difficile. (+Moral, +Mental)'; },
+        },
+      ],
+    }),
+  },
+  {
+    id: 'mid_season_locker_clan_conflict',
+    minAge: 18,
+    maxAge: 45,
+    weight: (s) => (s.club ? 5 : 0),
+    build: () => ({
+      title: 'Conflit de clans dans le vestiaire',
+      text: 'Le vestiaire se scinde en deux clans rivaux : les nouvelles recrues internationales contre le noyau historique du club.',
+      choices: [
+        {
+          label: 'Rester fidèle au noyau historique',
+          apply: (s) => { adjustDiscipline(s, 3); adjustReputation(s, -2); return 'Les anciens du club apprécient ta loyauté, mais les nouvelles stars t’ignorent un peu plus. (+Discipline, -Réputation)'; },
+        },
+        {
+          label: 'Se rapprocher des nouvelles recrues',
+          apply: (s) => { adjustReputation(s, 3); adjustDiscipline(s, -2); return 'Le vestiaire international t’ouvre ses portes, au prix de quelques tensions avec les historiques. (+Réputation, -Discipline)'; },
+        },
+        {
+          label: 'Jouer les médiateurs entre les deux clans',
+          apply: (s) => {
+            if (nextChance(s, 0.5)) {
+              adjustReputation(s, 6);
+              adjustMorale(s, 4);
+              return 'Ton rôle de trait d’union entre les deux camps est salué par tout le vestiaire. (+Réputation, +Moral)';
+            }
+            adjustMorale(s, -5);
+            return 'Les deux camps te reprochent de ne pas avoir choisi ton clan. (-Moral)';
+          },
+        },
+      ],
+    }),
+  },
 ];
 
 export function rollMidSeasonEvent(

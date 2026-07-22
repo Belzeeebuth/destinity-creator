@@ -1,13 +1,15 @@
 // Capture générique des variations de stats provoquées par un choix (évènement, négociation...).
 // Permet d'afficher des pastilles "+3 👁️ Vision" chiffrées et colorées sans avoir à
 // faire remonter manuellement les deltas depuis chaque effet du jeu.
-import { ATTRIBUTE_KEYS, ATTRIBUTE_LABELS, ATTRIBUTE_ICONS } from '../data/positions';
+import { ATTRIBUTE_KEYS, ATTRIBUTE_LABELS, ATTRIBUTE_ICONS, getPosition } from '../data/positions';
 import type { PlayerState, StatDelta } from './types';
+import { overallRating } from './types';
 
 export type { StatDelta };
 
 interface StatSnapshot {
   attributes: Record<string, number>;
+  overall: number;
   morale: number;
   discipline: number;
   reputation: number;
@@ -17,7 +19,8 @@ interface StatSnapshot {
   caps: number;
 }
 
-const META_STATS: { key: keyof StatSnapshot; label: string; icon: string; isMoney?: boolean }[] = [
+const META_STATS: { key: keyof StatSnapshot; label: string; icon: string; isMoney?: boolean; minDelta?: number }[] = [
+  { key: 'overall', label: 'Général (OVR)', icon: '⚡', minDelta: 0.1 },
   { key: 'morale', label: 'Moral', icon: '😊' },
   { key: 'discipline', label: 'Discipline', icon: '📏' },
   { key: 'reputation', label: 'Réputation', icon: '⭐' },
@@ -28,8 +31,10 @@ const META_STATS: { key: keyof StatSnapshot; label: string; icon: string; isMone
 ];
 
 export function snapshotStats(state: PlayerState): StatSnapshot {
+  const position = getPosition(state.positionCode);
   return {
     attributes: { ...state.attributes },
+    overall: overallRating(state.attributes, position.weights),
     morale: state.morale,
     discipline: state.discipline,
     reputation: state.reputation,
@@ -51,8 +56,9 @@ export function diffStats(before: StatSnapshot, after: StatSnapshot): StatDelta[
   }
 
   for (const meta of META_STATS) {
-    const delta = (after[meta.key] as number) - (before[meta.key] as number);
-    if (meta.isMoney ? Math.abs(delta) >= 1 : Math.abs(delta) >= 1) {
+    const rawDelta = (after[meta.key] as number) - (before[meta.key] as number);
+    const delta = Math.round(rawDelta * 10) / 10;
+    if (Math.abs(delta) >= (meta.minDelta ?? 1)) {
       deltas.push({ key: meta.key, label: meta.label, icon: meta.icon, delta, isMoney: meta.isMoney });
     }
   }

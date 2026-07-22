@@ -43,6 +43,10 @@ export interface TransferOffer {
   divisionLevel?: number; // niveau réel dans la pyramide du pays, si connue (1 = sommet)
 }
 
+// Style de jeu choisi par le joueur en début de simulation de saison : influence directement
+// les résultats (buts/passes, cartons, blessures, clean sheets) au lieu de subir la saison passivement.
+export type PlayStyle = 'offensif' | 'defensif' | 'equilibre';
+
 export type CareerPhase =
   | 'preseason'
   | 'event'
@@ -244,6 +248,7 @@ export interface PlayerState {
   capGoals: number;
   captain: boolean;
   ballonsAttempts: number; // nombre de fois nominé pour la distinction de meilleur joueur mondial
+  nationalTeamDoorClosed: boolean; // sortie médiatique ratée : le sélectionneur t'écarte définitivement
 
   careerGoals: number;
   careerAssists: number;
@@ -267,6 +272,8 @@ export interface PlayerState {
   investments: Partial<Record<InvestmentId, InvestmentHolding>>;
   marketProfile: Record<InvestmentId, MarketAssetProfile>;
   relationship: RelationshipState;
+  prestigeAssets: string[]; // ids des résidences/objets de prestige achetés (uniques, non revendables)
+  reputationShield: number; // 0-1, réduit l'ampleur des pertes de réputation (achats de prestige)
 
   history: SeasonRecord[];
   seenClubNames: string[]; // clubs déjà proposés ou fréquentés, pour ne pas les reproposer après un refus
