@@ -1,24 +1,25 @@
 import { useState } from 'react';
 import { getPosition } from '../data/positions';
 import { useGameStore } from '../state/store';
+import { L } from '../i18n/language';
+import { ui } from '../i18n/ui';
 import CountryFlag from '../components/ui/CountryFlag';
 import OverallEvolutionChart from '../components/end/OverallEvolutionChart';
 
 export default function PantheonPage() {
   const pantheon = useGameStore((s) => s.meta.pantheon);
+  const language = useGameStore((s) => s.language);
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="font-display text-3xl text-ink-100">🏛️ Panthéon</h1>
-      <p className="mt-1 text-sm text-ink-300">
-        Les légendes écrites sur cet appareil, classées par score de légende. Clique sur une légende pour revivre sa carrière saison par saison.
-      </p>
+      <h1 className="font-display text-3xl text-ink-100">{ui(language, 'pantheonTitle')}</h1>
+      <p className="mt-1 text-sm text-ink-300">{ui(language, 'pantheonSubtitle')}</p>
 
       {pantheon.length === 0 ? (
         <div className="card mt-6 p-10 text-center text-ink-400">
-          <p>Aucune légende inscrite pour l'instant.</p>
-          <p className="mt-1 text-sm">Termine une carrière pour tenter d'entrer au Panthéon.</p>
+          <p>{ui(language, 'pantheonEmptyTitle')}</p>
+          <p className="mt-1 text-sm">{ui(language, 'pantheonEmptySub')}</p>
         </div>
       ) : (
         <div className="mt-6 flex flex-col gap-2">
@@ -26,6 +27,7 @@ export default function PantheonPage() {
             const position = getPosition(entry.positionCode as never);
             const isGK = position?.code === 'GK';
             const open = openId === entry.id;
+            const positionName = position ? L(language, position.name, position.nameEn) : entry.positionCode;
             return (
               <div key={entry.id} className="card overflow-hidden">
                 <button
@@ -37,7 +39,7 @@ export default function PantheonPage() {
                   <div className="flex-1">
                     <div className="font-display text-lg text-ink-100">{entry.playerName}</div>
                     <div className="text-xs text-ink-400">
-                      {entry.countryName} · {position?.name ?? entry.positionCode}
+                      {entry.countryName} · {positionName}
                     </div>
                     <div className="mt-0.5 text-sm text-ink-300">{entry.summary}</div>
                   </div>
@@ -51,7 +53,7 @@ export default function PantheonPage() {
                   <div className="border-t border-white/10 p-4">
                     {entry.majorAwards.length > 0 && (
                       <div className="mb-3">
-                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">Distinctions individuelles</p>
+                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">{ui(language, 'individualAwardsTitle').replace('🌟 ', '')}</p>
                         <ul className="flex flex-col gap-1 text-sm text-ink-300">
                           {entry.majorAwards.map((a, idx) => (
                             <li key={idx}>🏅 {a}</li>
@@ -61,7 +63,7 @@ export default function PantheonPage() {
                     )}
                     {entry.trophies.length > 0 && (
                       <div className="mb-3">
-                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">Palmarès collectif</p>
+                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">{ui(language, 'trophiesTitle')}</p>
                         <ul className="flex flex-col gap-1 text-sm text-ink-300">
                           {entry.trophies.map((t, idx) => (
                             <li key={idx}>🏆 {t}</li>
@@ -76,27 +78,27 @@ export default function PantheonPage() {
                     )}
                     {entry.history.length > 0 && (
                       <div className="overflow-x-auto">
-                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">Saison par saison</p>
+                        <p className="mb-1 text-xs uppercase tracking-wide text-ink-500">{ui(language, 'seasonBySeasonLabel')}</p>
                         <table className="w-full min-w-[520px] text-left text-sm">
                           <thead className="text-ink-500">
                             <tr>
-                              <th className="pb-1.5">Saison</th>
-                              <th className="pb-1.5">Âge</th>
-                              <th className="pb-1.5">Club</th>
-                              <th className="pb-1.5">Division</th>
-                              <th className="pb-1.5">Matchs</th>
+                              <th className="pb-1.5">{ui(language, 'homeSeasonAge')}</th>
+                              <th className="pb-1.5">{ui(language, 'tableAge')}</th>
+                              <th className="pb-1.5">{ui(language, 'tableClub')}</th>
+                              <th className="pb-1.5">{ui(language, 'tableDivision')}</th>
+                              <th className="pb-1.5">{ui(language, 'statMatches')}</th>
                               {isGK ? (
                                 <>
-                                  <th className="pb-1.5">Clean sheets</th>
-                                  <th className="pb-1.5">Arrêts</th>
+                                  <th className="pb-1.5">{ui(language, 'statCleanSheets')}</th>
+                                  <th className="pb-1.5">{ui(language, 'statSaves')}</th>
                                 </>
                               ) : (
                                 <>
-                                  <th className="pb-1.5">Buts</th>
-                                  <th className="pb-1.5">Passes</th>
+                                  <th className="pb-1.5">{ui(language, 'statGoals')}</th>
+                                  <th className="pb-1.5">{ui(language, 'tablePasses')}</th>
                                 </>
                               )}
-                              <th className="pb-1.5">Note</th>
+                              <th className="pb-1.5">{ui(language, 'tableRating')}</th>
                             </tr>
                           </thead>
                           <tbody className="text-ink-300">

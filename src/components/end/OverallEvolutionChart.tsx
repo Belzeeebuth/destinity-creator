@@ -1,4 +1,6 @@
 import type { SeasonRecord } from '../../engine/types';
+import { useGameStore } from '../../state/store';
+import { ui } from '../../i18n/ui';
 
 interface Props {
   history: SeasonRecord[];
@@ -10,6 +12,7 @@ const PAD_X = 36;
 const PAD_Y = 24;
 
 export default function OverallEvolutionChart({ history }: Props) {
+  const language = useGameStore((s) => s.language);
   if (history.length < 2) return null;
 
   const values = history.map((h) => h.overall);
@@ -34,9 +37,9 @@ export default function OverallEvolutionChart({ history }: Props) {
 
   return (
     <div className="card p-5">
-      <h2 className="font-display text-lg text-ink-100">📈 Évolution du niveau global</h2>
+      <h2 className="font-display text-lg text-ink-100">{ui(language, 'overallEvolutionTitle')}</h2>
       <div className="mt-3 overflow-x-auto">
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full min-w-[480px]" role="img" aria-label="Évolution de la note globale au fil des saisons">
+        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} className="w-full min-w-[480px]" role="img" aria-label={ui(language, 'overallEvolutionAlt')}>
           {Array.from({ length: gridLines + 1 }).map((_, i) => {
             const y = PAD_Y + (innerH / gridLines) * i;
             const value = Math.round(max - (span / gridLines) * i);
@@ -72,9 +75,15 @@ export default function OverallEvolutionChart({ history }: Props) {
         </svg>
       </div>
       <div className="mt-1 flex justify-between text-[11px] text-ink-500">
-        <span>Saison {history[0].season} ({history[0].age} ans)</span>
-        <span>Pic : {values[peakIndex]} (saison {history[peakIndex].season})</span>
-        <span>Saison {history[history.length - 1].season} ({history[history.length - 1].age} ans)</span>
+        <span>
+          {ui(language, 'homeSeasonAge')} {history[0].season} ({history[0].age} {ui(language, 'homeYearsOld')})
+        </span>
+        <span>
+          {ui(language, 'peakLabel')} {values[peakIndex]} ({ui(language, 'homeSeasonAge').toLowerCase()} {history[peakIndex].season})
+        </span>
+        <span>
+          {ui(language, 'homeSeasonAge')} {history[history.length - 1].season} ({history[history.length - 1].age} {ui(language, 'homeYearsOld')})
+        </span>
       </div>
     </div>
   );

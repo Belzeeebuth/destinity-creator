@@ -23,7 +23,7 @@ import {
 import { evaluateBadges, BADGES } from '../data/badges';
 import { getCountry } from '../data/countries';
 import { getConsumable } from '../data/shop';
-import { adjustFitness, adjustMorale } from '../engine/util';
+import { adjustFitness, adjustMorale, loc } from '../engine/util';
 import {
   investAmount,
   withdrawInvestment,
@@ -35,7 +35,7 @@ import {
 } from '../engine/finance';
 import type { StatDelta } from '../engine/diff';
 import type { Language } from '../i18n/language';
-import { loadLanguage, saveLanguage } from '../i18n/language';
+import { loadLanguage, saveLanguage, L } from '../i18n/language';
 import { GLOBAL_TOURNAMENT_NAME } from '../data/awards';
 
 const CAREER_STORAGE_KEY = 'destiny11_career_v1';
@@ -284,7 +284,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   retireNow: () => {
     const { career } = get();
     if (!career) return;
-    CareerEngine.retireCareer(career, 'Retraite volontaire, sur un dernier tour de terrain.');
+    CareerEngine.retireCareer(career, loc(career, 'Retraite volontaire, sur un dernier tour de terrain.', 'Voluntary retirement, on one last lap of the pitch.'));
     saveCareer(career);
     set({ career: { ...career } });
     get().finalizeCareerEnd();
@@ -337,7 +337,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       countryName: country.name,
       positionCode: career.positionCode,
       legendScore,
-      summary: `${career.careerGoals} buts, ${career.careerAssists} passes, ${career.caps} sélections, ${career.trophies.length} trophée(s) — retraite à ${career.age} ans`,
+      summary: loc(
+        career,
+        `${career.careerGoals} buts, ${career.careerAssists} passes, ${career.caps} sélections, ${career.trophies.length} trophée(s) — retraite à ${career.age} ans`,
+        `${career.careerGoals} goals, ${career.careerAssists} assists, ${career.caps} caps, ${career.trophies.length} ${career.trophies.length === 1 ? 'trophy' : 'trophies'} — retired at ${career.age}`,
+      ),
       createdAt: new Date().toISOString(),
       mode: career.mode,
       majorAwards: career.majorAwards,
@@ -391,7 +395,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (consumable.effect === 'instant_fitness') adjustFitness(career, consumable.value);
     else if (consumable.effect === 'instant_morale') adjustMorale(career, consumable.value);
     else if (consumable.effect === 'season_growth_boost') career.seasonGrowthBoostValue += consumable.value;
-    career.seasonLog.push(`Objet utilisé : ${consumable.name}.`);
+    career.seasonLog.push(loc(career, `Objet utilisé : ${consumable.name}.`, `Item used: ${L(career.language, consumable.name, consumable.nameEn)}.`));
 
     const nextMeta = consumeItem(meta, id);
     saveCareer(career);
@@ -440,6 +444,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 }));
 
-export function badgeNameById(id: string): string {
-  return BADGES.find((b) => b.id === id)?.name ?? id;
+export function badgeNameById(id: string, lang: Language = 'fr'): string {
+  const badge = BADGES.find((b) => b.id === id);
+  if (!badge) return id;
+  return lang === 'en' ? badge.nameEn : badge.name;
 }

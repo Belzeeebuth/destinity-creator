@@ -2,7 +2,8 @@ import type { InvestmentId, MarketAssetProfile, PlayerState } from './types';
 import { INVESTMENTS, getInvestmentDefinition } from '../data/investments';
 import { getPrestigeAsset } from '../data/prestige';
 import { nextFloat, nextChance } from './rng';
-import { clamp, adjustMorale, adjustReputation, formatMoney } from './util';
+import { clamp, adjustMorale, adjustReputation, formatMoney, loc } from './util';
+import { L } from '../i18n/language';
 
 // Tire le profil de risque/rendement effectif de chaque actif POUR CETTE CARRIÈRE, à partir de ses
 // valeurs de base, en appliquant un facteur aléatoire propre à la partie (sauf le livret, garanti) :
@@ -49,8 +50,13 @@ export function evolveInvestments(state: PlayerState): string[] {
     holding.value = Math.max(0, Math.round(holding.value * (1 + changePct)));
     const delta = holding.value - before;
     if (before > 0 && Math.abs(delta) >= Math.max(30, before * 0.03)) {
+      const name = L(state.language, def.name, def.nameEn);
       narrative.push(
-        `${def.emoji} ${def.name} : ${delta >= 0 ? '+' : ''}${formatMoney(delta)} (total : ${formatMoney(holding.value)}).`,
+        loc(
+          state,
+          `${def.emoji} ${name} : ${delta >= 0 ? '+' : ''}${formatMoney(delta)} (total : ${formatMoney(holding.value)}).`,
+          `${def.emoji} ${name}: ${delta >= 0 ? '+' : ''}${formatMoney(delta)} (total: ${formatMoney(holding.value)}).`,
+        ),
       );
     }
   }
@@ -74,7 +80,7 @@ export function riskLabel(volatility: number, lang: import('../i18n/language').L
 export function investAmount(state: PlayerState, id: InvestmentId, amount: number): string {
   const def = getInvestmentDefinition(id);
   const clamped = Math.max(0, Math.min(Math.round(amount), state.savings));
-  if (clamped <= 0) return 'Montant invalide ou épargne insuffisante.';
+  if (clamped <= 0) return loc(state, 'Montant invalide ou épargne insuffisante.', 'Invalid amount or insufficient savings.');
   state.savings -= clamped;
   const existing = state.investments[id];
   if (existing) {
@@ -83,62 +89,87 @@ export function investAmount(state: PlayerState, id: InvestmentId, amount: numbe
   } else {
     state.investments[id] = { id, principal: clamped, value: clamped };
   }
-  return `${def.emoji} ${formatMoney(clamped)} investis dans ${def.name}.`;
+  const name = L(state.language, def.name, def.nameEn);
+  return loc(state, `${def.emoji} ${formatMoney(clamped)} investis dans ${name}.`, `${def.emoji} ${formatMoney(clamped)} invested in ${name}.`);
 }
 
 export function withdrawInvestment(state: PlayerState, id: InvestmentId): string {
   const holding = state.investments[id];
   const def = getInvestmentDefinition(id);
-  if (!holding || holding.value <= 0) return 'Rien à retirer sur cet investissement.';
+  if (!holding || holding.value <= 0) return loc(state, 'Rien à retirer sur cet investissement.', 'Nothing to withdraw on this investment.');
   const amount = holding.value;
   state.savings += amount;
   delete state.investments[id];
-  return `${def.emoji} Position soldée sur ${def.name} : ${formatMoney(amount)} reversés sur ton épargne.`;
+  const name = L(state.language, def.name, def.nameEn);
+  return loc(
+    state,
+    `${def.emoji} Position soldée sur ${name} : ${formatMoney(amount)} reversés sur ton épargne.`,
+    `${def.emoji} Position closed on ${name}: ${formatMoney(amount)} moved back to your savings.`,
+  );
 }
 
 export const GIFT_TIERS = [
-  { id: 'petit', label: 'Petit geste', cost: 500, effect: 3 },
-  { id: 'genereux', label: 'Cadeau généreux', cost: 3000, effect: 8 },
-  { id: 'exceptionnel', label: 'Cadeau exceptionnel', cost: 12000, effect: 15 },
+  { id: 'petit', label: 'Petit geste', labelEn: 'Small gesture', cost: 500, effect: 3 },
+  { id: 'genereux', label: 'Cadeau généreux', labelEn: 'Generous gift', cost: 3000, effect: 8 },
+  { id: 'exceptionnel', label: 'Cadeau exceptionnel', labelEn: 'Exceptional gift', cost: 12000, effect: 15 },
 ] as const;
 
 export type GiftTierId = (typeof GIFT_TIERS)[number]['id'];
 
 export function giftFamily(state: PlayerState, tierId: GiftTierId): string {
   const tier = GIFT_TIERS.find((t) => t.id === tierId);
-  if (!tier || state.savings < tier.cost) return 'Épargne insuffisante pour ce cadeau.';
+  if (!tier || state.savings < tier.cost) return loc(state, 'Épargne insuffisante pour ce cadeau.', 'Insufficient savings for this gift.');
   state.savings -= tier.cost;
   adjustMorale(state, tier.effect);
-  return `Tu gâtes ta famille avec un ${tier.label.toLowerCase()} (-${formatMoney(tier.cost)}, +Moral).`;
+  const label = L(state.language, tier.label, tier.labelEn).toLowerCase();
+  return loc(
+    state,
+    `Tu gâtes ta famille avec un ${label} (-${formatMoney(tier.cost)}, +Moral).`,
+    `You spoil your family with a ${label} (-${formatMoney(tier.cost)}, +Morale).`,
+  );
 }
 
 export function giftPartner(state: PlayerState, tierId: GiftTierId): string {
   const tier = GIFT_TIERS.find((t) => t.id === tierId);
   if (!tier || state.savings < tier.cost || state.relationship.status === 'celibataire') {
-    return 'Action impossible.';
+    return loc(state, 'Action impossible.', 'Action not possible.');
   }
   state.savings -= tier.cost;
   state.relationship.happiness = clamp(state.relationship.happiness + tier.effect, 0, 100);
   adjustMorale(state, Math.round(tier.effect / 2));
-  return `Tu gâtes ${state.relationship.partnerName} avec un ${tier.label.toLowerCase()} (-${formatMoney(tier.cost)}, +Moral, +Complicité).`;
+  const label = L(state.language, tier.label, tier.labelEn).toLowerCase();
+  return loc(
+    state,
+    `Tu gâtes ${state.relationship.partnerName} avec un ${label} (-${formatMoney(tier.cost)}, +Moral, +Complicité).`,
+    `You spoil ${state.relationship.partnerName} with a ${label} (-${formatMoney(tier.cost)}, +Morale, +Closeness).`,
+  );
 }
 
 // Achat unique de prestige (résidence, objet...), financé par l'épargne : soit un gain de réputation
 // immédiat et permanent, soit un bouclier qui amortit durablement les futures pertes de réputation.
 export function purchasePrestigeAsset(state: PlayerState, assetId: string): string {
   const asset = getPrestigeAsset(assetId);
-  if (!asset) return 'Actif de prestige inconnu.';
-  if (state.prestigeAssets.includes(assetId)) return 'Tu possèdes déjà cet actif.';
-  if (state.savings < asset.cost) return 'Épargne insuffisante pour cet achat.';
+  if (!asset) return loc(state, 'Actif de prestige inconnu.', 'Unknown prestige asset.');
+  if (state.prestigeAssets.includes(assetId)) return loc(state, 'Tu possèdes déjà cet actif.', 'You already own this asset.');
+  if (state.savings < asset.cost) return loc(state, 'Épargne insuffisante pour cet achat.', 'Insufficient savings for this purchase.');
 
   state.savings -= asset.cost;
   state.prestigeAssets.push(assetId);
+  const name = L(state.language, asset.name, asset.nameEn);
 
   if (asset.effect === 'permanent_reputation') {
     adjustReputation(state, asset.value);
-    return `${asset.emoji} ${asset.name} acquis : ton prestige grimpe aussitôt (+${asset.value} Réputation, -${formatMoney(asset.cost)}).`;
+    return loc(
+      state,
+      `${asset.emoji} ${name} acquis : ton prestige grimpe aussitôt (+${asset.value} Réputation, -${formatMoney(asset.cost)}).`,
+      `${asset.emoji} ${name} acquired: your prestige instantly rises (+${asset.value} Reputation, -${formatMoney(asset.cost)}).`,
+    );
   }
 
   state.reputationShield = clamp(state.reputationShield + asset.value, 0, 0.6);
-  return `${asset.emoji} ${asset.name} acquis : un bouclier de réputation t'aidera désormais à encaisser les coups durs médiatiques (-${formatMoney(asset.cost)}).`;
+  return loc(
+    state,
+    `${asset.emoji} ${name} acquis : un bouclier de réputation t'aidera désormais à encaisser les coups durs médiatiques (-${formatMoney(asset.cost)}).`,
+    `${asset.emoji} ${name} acquired: a reputation shield will now help you absorb future media setbacks (-${formatMoney(asset.cost)}).`,
+  );
 }

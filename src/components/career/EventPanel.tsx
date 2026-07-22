@@ -2,12 +2,14 @@ import { useState } from 'react';
 import type { PlayerState } from '../../engine/types';
 import { useGameStore } from '../../state/store';
 import { formatMoney } from '../../engine/util';
+import { ui } from '../../i18n/ui';
 
 export default function EventPanel({ career }: { career: PlayerState }) {
   const pickEventChoice = useGameStore((s) => s.pickEventChoice);
   const continueAfterEvent = useGameStore((s) => s.continueAfterEvent);
   const lastEventResult = useGameStore((s) => s.lastEventResult);
   const lastEventDeltas = useGameStore((s) => s.lastEventDeltas);
+  const language = useGameStore((s) => s.language);
   const [picked, setPicked] = useState<number | null>(null);
 
   function handlePick(index: number) {
@@ -40,7 +42,7 @@ export default function EventPanel({ career }: { career: PlayerState }) {
           </div>
         )}
         <button onClick={continueAfterEvent} className="btn-gold mt-5 rounded-full px-6 py-2 text-sm">
-          Continuer
+          {ui(language, 'continueButton')}
         </button>
       </div>
     );
@@ -49,7 +51,7 @@ export default function EventPanel({ career }: { career: PlayerState }) {
   if (!career.pendingEvent) {
     return (
       <div className="card p-6 text-center text-ink-300">
-        <p>Chargement de la saison...</p>
+        <p>{ui(language, 'loadingSeason')}</p>
       </div>
     );
   }
@@ -57,7 +59,9 @@ export default function EventPanel({ career }: { career: PlayerState }) {
   return (
     <div className="card animate-pop-in p-6">
       <span className="text-xs uppercase tracking-wide text-gold-400">
-        {career.phase === 'mid_season' ? `❄️ Trêve hivernale — mi-saison ${career.season}` : `🗓️ Événement — saison ${career.season}`}
+        {career.phase === 'mid_season'
+          ? `${ui(language, 'midSeasonBreak')} ${career.season}`
+          : `${ui(language, 'eventHeader')} ${career.season}`}
       </span>
       <h2 className="mt-1 font-display text-2xl text-ink-100">{career.pendingEvent.title}</h2>
       <p className="mt-2 text-ink-300">{career.pendingEvent.text}</p>

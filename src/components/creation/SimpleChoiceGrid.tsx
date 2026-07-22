@@ -1,7 +1,12 @@
+import { useGameStore } from '../../state/store';
+import { L } from '../../i18n/language';
+
 interface ChoiceItem {
   id: string;
   name: string;
+  nameEn: string;
   description: string;
+  descriptionEn: string;
   emoji?: string;
 }
 
@@ -14,6 +19,7 @@ interface Props<T extends ChoiceItem> {
 }
 
 export default function SimpleChoiceGrid<T extends ChoiceItem>({ title, subtitle, items, value, onSelect }: Props<T>) {
+  const language = useGameStore((s) => s.language);
   return (
     <div className="flex flex-col gap-5">
       <div>
@@ -31,9 +37,9 @@ export default function SimpleChoiceGrid<T extends ChoiceItem>({ title, subtitle
             >
               <span className="flex items-center gap-2 font-display text-lg text-ink-100">
                 {item.emoji && <span aria-hidden>{item.emoji}</span>}
-                {item.name}
+                {L(language, item.name, item.nameEn)}
               </span>
-              <p className="text-sm text-ink-300">{item.description}</p>
+              <p className="text-sm text-ink-300">{L(language, item.description, item.descriptionEn)}</p>
             </button>
           );
         })}

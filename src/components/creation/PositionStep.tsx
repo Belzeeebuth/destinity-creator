@@ -1,4 +1,7 @@
-import { POSITIONS, ATTRIBUTE_LABELS, ATTRIBUTE_ICONS, type PositionCode } from '../../data/positions';
+import { POSITIONS, ATTRIBUTE_LABELS, ATTRIBUTE_LABELS_EN, ATTRIBUTE_ICONS, type PositionCode } from '../../data/positions';
+import { useGameStore } from '../../state/store';
+import { L } from '../../i18n/language';
+import { ui } from '../../i18n/ui';
 
 interface Props {
   value: PositionCode | null;
@@ -6,13 +9,12 @@ interface Props {
 }
 
 export default function PositionStep({ value, onSelect }: Props) {
+  const language = useGameStore((s) => s.language);
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="font-display text-2xl text-ink-100">Choisis ton poste</h2>
-        <p className="mt-1 text-sm text-ink-300">
-          Le poste détermine les attributs qui comptent le plus dans ta progression et ta note globale.
-        </p>
+        <h2 className="font-display text-2xl text-ink-100">{ui(language, 'positionStepTitle')}</h2>
+        <p className="mt-1 text-sm text-ink-300">{ui(language, 'positionStepSubtitle')}</p>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {POSITIONS.map((position) => {
@@ -26,15 +28,15 @@ export default function PositionStep({ value, onSelect }: Props) {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 font-display text-lg text-ink-100">
                   <span aria-hidden>{position.emoji}</span>
-                  {position.name}
+                  {L(language, position.name, position.nameEn)}
                 </span>
                 <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs text-ink-300">{position.short}</span>
               </div>
-              <p className="text-sm text-ink-300">{position.description}</p>
+              <p className="text-sm text-ink-300">{L(language, position.description, position.descriptionEn)}</p>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {position.keyAttributes.map((attr) => (
                   <span key={attr} className="rounded-full bg-gold-500/10 px-2 py-0.5 text-[11px] text-gold-400">
-                    {ATTRIBUTE_ICONS[attr]} {ATTRIBUTE_LABELS[attr]}
+                    {ATTRIBUTE_ICONS[attr]} {language === 'en' ? ATTRIBUTE_LABELS_EN[attr] : ATTRIBUTE_LABELS[attr]}
                   </span>
                 ))}
               </div>

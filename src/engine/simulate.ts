@@ -170,7 +170,7 @@ export function simulateSeason(
   const clubTier = resolveClubTier(state.club);
 
   if (!state.club) {
-    narrative.push("Sans club cette saison : tu t'entraînes en amateur et multiplies les essais.");
+    narrative.push(loc(state, "Sans club cette saison : tu t'entraînes en amateur et multiplies les essais.", 'No club this season: you train as an amateur and go from trial to trial.'));
     adjustMorale(state, -6);
     return { record: emptySeasonRecord(state), narrative };
   }
@@ -233,7 +233,7 @@ export function simulateSeason(
     cardsRed = 1;
     const suspension = nextInt(state, 1, 3);
     appearances = Math.max(0, appearances - suspension);
-    narrative.push(`Carton rouge et suspension de ${suspension} match${suspension > 1 ? 's' : ''}.`);
+    narrative.push(loc(state, `Carton rouge et suspension de ${suspension} match${suspension > 1 ? 's' : ''}.`, `Red card and a ${suspension}-match suspension.`));
   }
 
   // Note moyenne : proche de 6.5 en cas d'équilibre, monte si tu domines ton niveau.
@@ -274,10 +274,14 @@ export function simulateSeason(
   const trophies: string[] = [];
   const trophyChance = clamp((clubTier.prestige - 30) / 160, 0, 0.5);
   if (nextChance(state, trophyChance)) {
-    const trophyName = clubTier.index >= 5 ? 'Ligue des Champions' : clubTier.index >= 4 ? 'Coupe continentale' : 'Championnat national';
+    const trophyName = loc(
+      state,
+      clubTier.index >= 5 ? 'Ligue des Champions' : clubTier.index >= 4 ? 'Coupe continentale' : 'Championnat national',
+      clubTier.index >= 5 ? 'Champions League' : clubTier.index >= 4 ? 'Continental Cup' : 'National League',
+    );
     trophies.push(trophyName);
-    state.trophies.push(`${trophyName} — saison ${state.season} (${state.club.name})`);
-    narrative.push(`Sacre collectif : ${trophyName} avec ${state.club.name} !`);
+    state.trophies.push(loc(state, `${trophyName} — saison ${state.season} (${state.club.name})`, `${trophyName} — season ${state.season} (${state.club.name})`));
+    narrative.push(loc(state, `Sacre collectif : ${trophyName} avec ${state.club.name} !`, `Team triumph: ${trophyName} with ${state.club.name}!`));
   }
 
   // Montée / descente de division en fin de saison (pays à pyramide réelle uniquement).
@@ -301,10 +305,20 @@ export function simulateSeason(
   state.careerRedCards += cardsRed;
 
   if (position.code === 'GK') {
-    narrative.unshift(`${appearances} matchs, ${cleanSheets} clean sheet${cleanSheets > 1 ? 's' : ''}, ${saves} arrêts — note moyenne ${avgRating.toFixed(1)}/10.`);
+    narrative.unshift(
+      loc(
+        state,
+        `${appearances} matchs, ${cleanSheets} clean sheet${cleanSheets > 1 ? 's' : ''}, ${saves} arrêts — note moyenne ${avgRating.toFixed(1)}/10.`,
+        `${appearances} matches, ${cleanSheets} clean sheet${cleanSheets > 1 ? 's' : ''}, ${saves} saves — average rating ${avgRating.toFixed(1)}/10.`,
+      ),
+    );
   } else {
     narrative.unshift(
-      `${appearances} matchs, ${goals} but${goals > 1 ? 's' : ''}, ${assists} passe${assists > 1 ? 's' : ''} décisive${assists > 1 ? 's' : ''} — note moyenne ${avgRating.toFixed(1)}/10.`,
+      loc(
+        state,
+        `${appearances} matchs, ${goals} but${goals > 1 ? 's' : ''}, ${assists} passe${assists > 1 ? 's' : ''} décisive${assists > 1 ? 's' : ''} — note moyenne ${avgRating.toFixed(1)}/10.`,
+        `${appearances} matches, ${goals} goal${goals > 1 ? 's' : ''}, ${assists} assist${assists > 1 ? 's' : ''} — average rating ${avgRating.toFixed(1)}/10.`,
+      ),
     );
   }
 
@@ -342,9 +356,9 @@ function emptySeasonRecord(state: PlayerState): SeasonRecord {
   return {
     season: state.season,
     age: state.age,
-    clubName: 'Sans club',
+    clubName: loc(state, 'Sans club', 'No club'),
     clubTierIndex: 0,
-    divisionName: 'Libre',
+    divisionName: loc(state, 'Libre', 'Free agent'),
     countryCode: state.countryCode,
     appearances: 0,
     goals: 0,
@@ -369,6 +383,16 @@ function emptySeasonRecord(state: PlayerState): SeasonRecord {
 // ---------------- Montée / descente de division ----------------
 
 const LEAGUE_TABLE_SIZE = 18;
+
+function ordinalEn(n: number): string {
+  if (n % 100 >= 11 && n % 100 <= 13) return `${n}th`;
+  switch (n % 10) {
+    case 1: return `${n}st`;
+    case 2: return `${n}nd`;
+    case 3: return `${n}rd`;
+    default: return `${n}th`;
+  }
+}
 
 function resolvePromotionRelegation(state: PlayerState, overall: number, avgRating: number): string[] {
   const narrative: string[] = [];
@@ -397,7 +421,13 @@ function resolvePromotionRelegation(state: PlayerState, overall: number, avgRati
       club.tierIndex = clamp(6 - newLevel, 1, 5);
       state.wage = Math.round(state.wage * clamp(newDivision.wageBase / division.wageBase, 0.5, 3));
       adjustReputation(state, 6);
-      narrative.push(`Ton équipe termine ${finalPosition}${finalPosition === 1 ? 're' : 'e'} de ${division.name} : promotion en ${newDivision.name} !`);
+      narrative.push(
+        loc(
+          state,
+          `Ton équipe termine ${finalPosition}${finalPosition === 1 ? 're' : 'e'} de ${division.name} : promotion en ${newDivision.name} !`,
+          `Your team finishes ${ordinalEn(finalPosition)} in ${division.name}: promoted to ${newDivision.name}!`,
+        ),
+      );
     }
   } else if (finalPosition > LEAGUE_TABLE_SIZE - relegationSpots) {
     const newLevel = level + 1;
@@ -407,10 +437,16 @@ function resolvePromotionRelegation(state: PlayerState, overall: number, avgRati
       club.tierIndex = clamp(6 - newLevel, 1, 5);
       state.wage = Math.round(state.wage * clamp(newDivision.wageBase / division.wageBase, 0.3, 1));
       adjustReputation(state, -4);
-      narrative.push(`Ton équipe termine ${finalPosition}e de ${division.name} : relégation en ${newDivision.name}...`);
+      narrative.push(
+        loc(
+          state,
+          `Ton équipe termine ${finalPosition}e de ${division.name} : relégation en ${newDivision.name}...`,
+          `Your team finishes ${ordinalEn(finalPosition)} in ${division.name}: relegated to ${newDivision.name}...`,
+        ),
+      );
     }
   } else {
-    narrative.push(`Ton équipe termine ${finalPosition}e de ${division.name} cette saison.`);
+    narrative.push(loc(state, `Ton équipe termine ${finalPosition}e de ${division.name} cette saison.`, `Your team finishes ${ordinalEn(finalPosition)} in ${division.name} this season.`));
   }
 
   return narrative;
@@ -440,14 +476,20 @@ function simulateNationalTeam(state: PlayerState, country: Country, overall: num
   state.capGoals += capGoals;
 
   if (isDebut) {
-    narrative.push(`Première sélection en équipe nationale ${isMicro(country) ? '— une immense fierté pour ton petit pays' : ''} !`);
+    narrative.push(
+      loc(
+        state,
+        `Première sélection en équipe nationale ${isMicro(country) ? '— une immense fierté pour ton petit pays' : ''} !`,
+        `First cap with the national team${isMicro(country) ? ' — an immense source of pride for your small country' : ''}!`,
+      ),
+    );
   } else {
-    narrative.push(`${capsGained} sélection${capsGained > 1 ? 's' : ''} de plus avec la sélection nationale.`);
+    narrative.push(loc(state, `${capsGained} sélection${capsGained > 1 ? 's' : ''} de plus avec la sélection nationale.`, `${capsGained} more cap${capsGained > 1 ? 's' : ''} with the national team.`));
   }
 
   if (!state.captain && state.caps >= 25 && country.nationalTeamAccess >= 7 && nextChance(state, 0.25)) {
     state.captain = true;
-    narrative.push('Le sélectionneur te confie le brassard de capitaine national !');
+    narrative.push(loc(state, 'Le sélectionneur te confie le brassard de capitaine national !', 'The national coach hands you the captain’s armband!'));
   }
 
   return { capsGained, capGoals, narrative };

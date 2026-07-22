@@ -74,8 +74,11 @@ export function startTournament(state: PlayerState, tournamentName: string, kind
   const playerCountry = getCountry(state.countryCode);
 
   const table: TournamentTeamStanding[] = [
-    emptyStanding(state.countryCode, playerCountry.name, true),
-    ...opponents.map((code) => emptyStanding(code, getCountry(code).name, false)),
+    emptyStanding(state.countryCode, loc(state, playerCountry.name, playerCountry.nameEn), true),
+    ...opponents.map((code) => {
+      const c = getCountry(code);
+      return emptyStanding(code, loc(state, c.name, c.nameEn), false);
+    }),
   ];
 
   state.activeTournament = {
@@ -88,7 +91,7 @@ export function startTournament(state: PlayerState, tournamentName: string, kind
     matches: [],
     eliminated: false,
     champion: false,
-    finalStageLabel: 'Phase de groupes',
+    finalStageLabel: loc(state, 'Phase de groupes', 'Group stage'),
     playerGoals: 0,
     playerAssists: 0,
     playerRatings: [],
@@ -114,6 +117,7 @@ function simulateMatch(
 ): TournamentMatchResult {
   const playerCountry = getCountry(state.countryCode);
   const opponent = getCountry(opponentCountryCode);
+  const opponentName = loc(state, opponent.name, opponent.nameEn);
   const overall = computeOverall(state, position);
 
   // Le collectif (niveau de la nation) doit peser plus lourd qu'un seul joueur, aussi bon
@@ -157,24 +161,36 @@ function simulateMatch(
   let narrative: string;
   if (wonOnPenalties !== undefined) {
     narrative = wonOnPenalties
-      ? `${scoreFor}-${scoreAgainst} après prolongation : victoire aux tirs au but face à ${opponent.name} !`
-      : `${scoreFor}-${scoreAgainst} après prolongation : défaite aux tirs au but face à ${opponent.name}.`;
+      ? loc(
+          state,
+          `${scoreFor}-${scoreAgainst} après prolongation : victoire aux tirs au but face à ${opponentName} !`,
+          `${scoreFor}-${scoreAgainst} after extra time: won on penalties against ${opponentName}!`,
+        )
+      : loc(
+          state,
+          `${scoreFor}-${scoreAgainst} après prolongation : défaite aux tirs au but face à ${opponentName}.`,
+          `${scoreFor}-${scoreAgainst} after extra time: lost on penalties against ${opponentName}.`,
+        );
   } else if (won) {
-    narrative = `Victoire ${scoreFor}-${scoreAgainst} face à ${opponent.name} !`;
+    narrative = loc(state, `Victoire ${scoreFor}-${scoreAgainst} face à ${opponentName} !`, `Won ${scoreFor}-${scoreAgainst} against ${opponentName}!`);
   } else if (draw) {
-    narrative = `Match nul ${scoreFor}-${scoreAgainst} face à ${opponent.name}.`;
+    narrative = loc(state, `Match nul ${scoreFor}-${scoreAgainst} face à ${opponentName}.`, `Drew ${scoreFor}-${scoreAgainst} against ${opponentName}.`);
   } else {
-    narrative = `Défaite ${scoreFor}-${scoreAgainst} face à ${opponent.name}.`;
+    narrative = loc(state, `Défaite ${scoreFor}-${scoreAgainst} face à ${opponentName}.`, `Lost ${scoreFor}-${scoreAgainst} against ${opponentName}.`);
   }
-  if (playerGoals > 0) narrative += ` Toi : ${playerGoals} but${playerGoals > 1 ? 's' : ''}.`;
-  if (playerAssists > 0) narrative += ` ${playerAssists} passe décisive.`;
+  if (playerGoals > 0) {
+    narrative += loc(state, ` Toi : ${playerGoals} but${playerGoals > 1 ? 's' : ''}.`, ` You: ${playerGoals} goal${playerGoals > 1 ? 's' : ''}.`);
+  }
+  if (playerAssists > 0) {
+    narrative += loc(state, ` ${playerAssists} passe décisive.`, ` ${playerAssists} assist${playerAssists > 1 ? 's' : ''}.`);
+  }
 
-  const timeline = buildMatchTimeline(state, opponent.name, scoreFor, scoreAgainst, playerGoals, playerAssists, isKnockout, wonOnPenalties);
+  const timeline = buildMatchTimeline(state, opponentName, scoreFor, scoreAgainst, playerGoals, playerAssists, isKnockout, wonOnPenalties);
 
   return {
     roundLabel,
     opponentCountryCode,
-    opponentCountryName: opponent.name,
+    opponentCountryName: opponentName,
     scoreFor,
     scoreAgainst,
     wonOnPenalties,
@@ -207,9 +223,9 @@ function distinctMinutes(state: PlayerState, count: number, max = 89): number[] 
   return Array.from(minutes).sort((a, b) => a - b);
 }
 
-function leadPhrase(lead: number): string {
+function leadPhrase(state: PlayerState, lead: number): string {
   if (lead === 0) return '';
-  return lead > 0 ? ' (tu mènes)' : ' (tu es mené)';
+  return lead > 0 ? loc(state, ' (tu mènes)', ' (you lead)') : loc(state, ' (tu es mené)', ' (you trail)');
 }
 
 // Construit un fil d'évènements minute par minute (but par but) pour donner du relief à un
@@ -225,7 +241,10 @@ function buildMatchTimeline(
   wonOnPenalties: boolean | undefined,
 ): TournamentMatchTimelineEvent[] {
   const events: TournamentMatchTimelineEvent[] = [
-    { minuteLabel: "Coup d'envoi", text: `Le coup d'envoi est donné face à ${opponentName}.` },
+    {
+      minuteLabel: loc(state, "Coup d'envoi", 'Kickoff'),
+      text: loc(state, `Le coup d'envoi est donné face à ${opponentName}.`, `Kickoff! The match begins against ${opponentName}.`),
+    },
   ];
 
   const forMinutes = distinctMinutes(state, scoreFor);
@@ -255,26 +274,27 @@ function buildMatchTimeline(
     else tallyAgainst += 1;
     const lead = tallyFor - tallyAgainst;
     const score = `${tallyFor}-${tallyAgainst}`;
+    const leadTxt = leadPhrase(state, lead);
     const text =
       g.side === 'against'
-        ? `But de ${opponentName}. ${score}${leadPhrase(lead)}`
+        ? loc(state, `But de ${opponentName}. ${score}${leadTxt}`, `Goal for ${opponentName}. ${score}${leadTxt}`)
         : g.isPlayerGoal
-          ? `BUT DE TOI ! ${score}${leadPhrase(lead)}`
+          ? loc(state, `BUT DE TOI ! ${score}${leadTxt}`, `GOAL FOR YOU! ${score}${leadTxt}`)
           : g.isPlayerAssist
-            ? `But de ton équipe sur ta passe décisive ! ${score}${leadPhrase(lead)}`
-            : `But de ton équipe. ${score}${leadPhrase(lead)}`;
+            ? loc(state, `But de ton équipe sur ta passe décisive ! ${score}${leadTxt}`, `Your team scores off your assist! ${score}${leadTxt}`)
+            : loc(state, `But de ton équipe. ${score}${leadTxt}`, `Goal for your team. ${score}${leadTxt}`);
     events.push({ minuteLabel: `${g.minute}'`, text, isPlayerInvolved: g.isPlayerGoal || g.isPlayerAssist });
   }
 
   if (isKnockout && wonOnPenalties !== undefined) {
     events.push({
-      minuteLabel: 'Tirs au but',
+      minuteLabel: loc(state, 'Tirs au but', 'Penalty shootout'),
       text: wonOnPenalties
-        ? 'Score serré après prolongation : la séance de tirs au but sourit à ton équipe !'
-        : 'Score serré après prolongation : la séance de tirs au but échappe à ton équipe.',
+        ? loc(state, 'Score serré après prolongation : la séance de tirs au but sourit à ton équipe !', 'A tight score after extra time: the penalty shootout smiles on your team!')
+        : loc(state, 'Score serré après prolongation : la séance de tirs au but échappe à ton équipe.', 'A tight score after extra time: the penalty shootout slips away from your team.'),
     });
   } else {
-    events.push({ minuteLabel: 'Coup de sifflet final', text: 'Coup de sifflet final.' });
+    events.push({ minuteLabel: loc(state, 'Coup de sifflet final', 'Full time'), text: loc(state, 'Coup de sifflet final.', 'Full time.') });
   }
 
   return events;
@@ -305,7 +325,8 @@ function recordTeamResult(standing: TournamentTeamStanding, goalsFor: number, go
 export function playNextGroupMatch(state: PlayerState, position: Position): TournamentMatchResult {
   const t = state.activeTournament!;
   const opponentCode = t.groupOpponents[t.groupMatchIndex];
-  const result = simulateMatch(state, position, opponentCode, `Phase de groupes — journée ${t.groupMatchIndex + 1}`, false);
+  const roundLabel = loc(state, `Phase de groupes — journée ${t.groupMatchIndex + 1}`, `Group stage — matchday ${t.groupMatchIndex + 1}`);
+  const result = simulateMatch(state, position, opponentCode, roundLabel, false);
 
   const playerStanding = t.groupTable.find((s) => s.isPlayerTeam)!;
   const opponentStanding = t.groupTable.find((s) => s.countryCode === opponentCode)!;
@@ -356,22 +377,22 @@ function finalizeGroupStage(state: PlayerState, position: Position): void {
 
   if (playerRank <= 1) {
     t.stage = 'huitiemes';
-    t.finalStageLabel = 'Huitièmes de finale';
+    t.finalStageLabel = loc(state, 'Huitièmes de finale', 'Round of 16');
   } else {
     t.stage = 'termine';
     t.eliminated = true;
-    t.finalStageLabel = 'Éliminé en phase de groupes';
+    t.finalStageLabel = loc(state, 'Éliminé en phase de groupes', 'Eliminated in the group stage');
     finalizeTournament(state, position);
   }
 }
 
 // ---------------- Élimination directe ----------------
 
-const KNOCKOUT_SEQUENCE: { stage: TournamentState['stage']; label: string; next: TournamentState['stage'] }[] = [
-  { stage: 'huitiemes', label: 'Huitième de finale', next: 'quarts' },
-  { stage: 'quarts', label: 'Quart de finale', next: 'demies' },
-  { stage: 'demies', label: 'Demi-finale', next: 'finale' },
-  { stage: 'finale', label: 'Finale', next: 'termine' },
+const KNOCKOUT_SEQUENCE: { stage: TournamentState['stage']; label: string; labelEn: string; next: TournamentState['stage'] }[] = [
+  { stage: 'huitiemes', label: 'Huitième de finale', labelEn: 'Round of 16', next: 'quarts' },
+  { stage: 'quarts', label: 'Quart de finale', labelEn: 'Quarter-final', next: 'demies' },
+  { stage: 'demies', label: 'Demi-finale', labelEn: 'Semi-final', next: 'finale' },
+  { stage: 'finale', label: 'Finale', labelEn: 'Final', next: 'termine' },
 ];
 
 export function playKnockoutMatch(state: PlayerState, position: Position): TournamentMatchResult {
@@ -379,7 +400,7 @@ export function playKnockoutMatch(state: PlayerState, position: Position): Tourn
   const step = KNOCKOUT_SEQUENCE.find((s) => s.stage === t.stage)!;
   const opponentCode = pickOpponents(state, [state.countryCode, ...t.faced], 1)[0];
 
-  const result = simulateMatch(state, position, opponentCode, step.label, true);
+  const result = simulateMatch(state, position, opponentCode, loc(state, step.label, step.labelEn), true);
   t.matches.push(result);
   t.playerGoals += result.playerGoals;
   t.playerAssists += result.playerAssists;
@@ -393,16 +414,17 @@ export function playKnockoutMatch(state: PlayerState, position: Position): Tourn
   if (!won) {
     t.stage = 'termine';
     t.eliminated = true;
-    t.finalStageLabel = `Éliminé en ${step.label.toLowerCase()}`;
+    t.finalStageLabel = loc(state, `Éliminé en ${step.label.toLowerCase()}`, `Eliminated in the ${step.labelEn.toLowerCase()}`);
     finalizeTournament(state, position);
   } else if (step.stage === 'finale') {
     t.stage = 'termine';
     t.champion = true;
-    t.finalStageLabel = 'Vainqueur du tournoi !';
+    t.finalStageLabel = loc(state, 'Vainqueur du tournoi !', 'Tournament winner!');
     finalizeTournament(state, position);
   } else {
     t.stage = step.next;
-    t.finalStageLabel = KNOCKOUT_SEQUENCE.find((s) => s.stage === step.next)?.label ?? t.finalStageLabel;
+    const nextStep = KNOCKOUT_SEQUENCE.find((s) => s.stage === step.next);
+    t.finalStageLabel = nextStep ? loc(state, nextStep.label, nextStep.labelEn) : t.finalStageLabel;
   }
 
   return result;
@@ -413,6 +435,7 @@ export function playKnockoutMatch(state: PlayerState, position: Position): Tourn
 function finalizeTournament(state: PlayerState, position: Position): void {
   const t = state.activeTournament!;
   const playerCountry = getCountry(state.countryCode);
+  const playerCountryName = loc(state, playerCountry.name, playerCountry.nameEn);
 
   // Rivaux fictifs (nom généré, pas de joueurs réels) pour donner du relief aux classements.
   const rivalPool = Array.from(new Set([...t.groupOpponents, ...t.faced])).filter((c) => c !== state.countryCode);
@@ -426,7 +449,7 @@ function finalizeTournament(state: PlayerState, position: Position): void {
     return {
       name: `${name.firstName} ${name.lastName}`,
       countryCode: code,
-      countryName: country.name,
+      countryName: loc(state, country.name, country.nameEn),
       goals,
       assists,
       avgRating: Math.round(avgRating * 10) / 10,
@@ -447,16 +470,40 @@ function finalizeTournament(state: PlayerState, position: Position): void {
   adjustReputation(state, t.champion ? 16 : reachedKnockouts ? 8 : 3);
 
   if (t.champion) {
-    state.trophies.push(`${t.tournamentName} — saison ${state.season} (sélection ${playerCountry.name})`);
+    state.trophies.push(
+      loc(
+        state,
+        `${t.tournamentName} — saison ${state.season} (sélection ${playerCountryName})`,
+        `${t.tournamentName} — season ${state.season} (${playerCountryName} national team)`,
+      ),
+    );
   }
   if (goldenBootRank === 1 && t.playerGoals > 0) {
-    state.majorAwards.push(`Meilleur buteur du tournoi (${t.tournamentName}) — saison ${state.season}`);
+    state.majorAwards.push(
+      loc(
+        state,
+        `Meilleur buteur du tournoi (${t.tournamentName}) — saison ${state.season}`,
+        `Tournament top scorer (${t.tournamentName}) — season ${state.season}`,
+      ),
+    );
   }
   if (playmakerRank === 1 && t.playerAssists > 0) {
-    state.majorAwards.push(`Meilleur passeur du tournoi (${t.tournamentName}) — saison ${state.season}`);
+    state.majorAwards.push(
+      loc(
+        state,
+        `Meilleur passeur du tournoi (${t.tournamentName}) — saison ${state.season}`,
+        `Tournament top playmaker (${t.tournamentName}) — season ${state.season}`,
+      ),
+    );
   }
   if (bestPlayerRank === 1 && t.playerRatings.length >= 3) {
-    state.majorAwards.push(`Meilleur joueur du tournoi (${t.tournamentName}) — saison ${state.season}`);
+    state.majorAwards.push(
+      loc(
+        state,
+        `Meilleur joueur du tournoi (${t.tournamentName}) — saison ${state.season}`,
+        `Tournament best player (${t.tournamentName}) — season ${state.season}`,
+      ),
+    );
   }
 
   state.careerGoals += 0; // les buts de tournoi sont déjà comptés via capGoals/caps, pas les stats club

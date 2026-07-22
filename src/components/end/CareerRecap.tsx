@@ -6,6 +6,8 @@ import { getCountry, TIER_INFO } from '../../data/countries';
 import { getPosition } from '../../data/positions';
 import { formatMoney } from '../../engine/util';
 import { encodeShareCode } from '../../engine/challenges';
+import { L } from '../../i18n/language';
+import { ui } from '../../i18n/ui';
 import CountryFlag from '../ui/CountryFlag';
 import OverallEvolutionChart from './OverallEvolutionChart';
 
@@ -14,6 +16,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
   const careerEndSummary = useGameStore((s) => s.careerEndSummary);
   const finalizeCareerEnd = useGameStore((s) => s.finalizeCareerEnd);
   const abandonCareer = useGameStore((s) => s.abandonCareer);
+  const language = useGameStore((s) => s.language);
   const [showHistory, setShowHistory] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [challengeCode, setChallengeCode] = useState<string | null>(null);
@@ -24,10 +27,12 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
 
   const country = getCountry(career.countryCode);
   const position = getPosition(career.positionCode);
+  const countryName = L(language, country.name, country.nameEn);
+  const positionName = L(language, position.name, position.nameEn);
   const isGK = position.code === 'GK';
 
   function handleShare() {
-    const text = `J'ai écrit ma légende sur Destiny Eleven : ${career.firstName} ${career.lastName} (${country.name}, ${position.name}) — ${career.careerGoals} buts, ${career.caps} sélections, retraite à ${career.age} ans. Score de légende : ${careerEndSummary?.legendScore ?? '?'}.`;
+    const text = `${ui(language, 'shareText')} ${career.firstName} ${career.lastName} (${countryName}, ${positionName}) ${ui(language, 'shareTextMiddle')} ${career.careerGoals} ${ui(language, 'shareTextGoals')}, ${career.caps} ${ui(language, 'shareTextCaps')} ${career.age} ${ui(language, 'shareTextAge')} ${careerEndSummary?.legendScore ?? '?'}.`;
     navigator.clipboard?.writeText(text).then(() => {
       setShareCopied(true);
       setTimeout(() => setShareCopied(false), 2500);
@@ -60,20 +65,21 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <div className="card p-6 text-center">
         <span className="text-4xl">🏆</span>
-        <h1 className="mt-2 font-display text-3xl text-ink-100">Fin de carrière</h1>
+        <h1 className="mt-2 font-display text-3xl text-ink-100">{ui(language, 'careerOverTitle')}</h1>
         <p className="mt-1 text-ink-300">{career.retirementReason}</p>
         <p className="mt-3 font-display text-xl text-gold-400">
           {career.firstName} {career.lastName}
         </p>
         <p className="flex items-center justify-center gap-2 text-sm text-ink-400">
-          <CountryFlag code={career.countryCode} size="sm" /> {country.name} · {position.emoji} {position.name} · {TIER_INFO[country.tier].label}
+          <CountryFlag code={career.countryCode} size="sm" /> {countryName} · {position.emoji} {positionName} ·{' '}
+          {L(language, TIER_INFO[country.tier].label, TIER_INFO[country.tier].labelEn)}
         </p>
 
         {careerEndSummary && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
-            <Badge label="Score de légende" value={careerEndSummary.legendScore} />
-            <Badge label="Jetons gagnés" value={`+${careerEndSummary.tokensEarned}`} />
-            <Badge label="Nouveaux badges" value={careerEndSummary.newBadgeIds.length} />
+            <Badge label={ui(language, 'legendScoreLabel')} value={careerEndSummary.legendScore} />
+            <Badge label={ui(language, 'tokensEarnedLabel')} value={`+${careerEndSummary.tokensEarned}`} />
+            <Badge label={ui(language, 'newBadgesLabel')} value={careerEndSummary.newBadgeIds.length} />
           </div>
         )}
       </div>
@@ -81,30 +87,30 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
       <div className="card grid grid-cols-2 gap-3 p-5 text-center sm:grid-cols-4">
         {isGK ? (
           <>
-            <Stat label="Clean sheets" value={career.careerCleanSheets} />
-            <Stat label="Arrêts" value={career.careerSaves} />
+            <Stat label={ui(language, 'statCleanSheets')} value={career.careerCleanSheets} />
+            <Stat label={ui(language, 'statSaves')} value={career.careerSaves} />
           </>
         ) : (
           <>
-            <Stat label="Buts" value={career.careerGoals} />
-            <Stat label="Passes D." value={career.careerAssists} />
+            <Stat label={ui(language, 'statGoals')} value={career.careerGoals} />
+            <Stat label={ui(language, 'statAssists')} value={career.careerAssists} />
           </>
         )}
-        <Stat label="Matchs" value={career.careerAppearances} />
-        <Stat label="Sélections" value={career.caps} />
-        <Stat label="Trophées" value={career.trophies.length} />
-        <Stat label="Blessures" value={career.careerInjuries} />
-        <Stat label="Cartons 🟨/🟥" value={`${career.careerYellowCards}/${career.careerRedCards}`} />
-        <Stat label="Nominations Meilleur Joueur" value={career.ballonsAttempts} />
-        <Stat label="Retraite à" value={`${career.age} ans`} />
-        <Stat label="Valeur finale" value={formatMoney(career.marketValue)} />
+        <Stat label={ui(language, 'statMatches')} value={career.careerAppearances} />
+        <Stat label={ui(language, 'statusCaps')} value={career.caps} />
+        <Stat label={ui(language, 'statTrophies')} value={career.trophies.length} />
+        <Stat label={ui(language, 'statInjuries')} value={career.careerInjuries} />
+        <Stat label={ui(language, 'statCards')} value={`${career.careerYellowCards}/${career.careerRedCards}`} />
+        <Stat label={ui(language, 'statBallonNominations')} value={career.ballonsAttempts} />
+        <Stat label={ui(language, 'statRetiredAt')} value={`${career.age} ${ui(language, 'homeYearsOld')}`} />
+        <Stat label={ui(language, 'statFinalValue')} value={formatMoney(career.marketValue)} />
       </div>
 
       {career.history.length >= 2 && <OverallEvolutionChart history={career.history} />}
 
       {career.majorAwards.length > 0 && (
         <div className="card p-5">
-          <h2 className="font-display text-lg text-ink-100">🌟 Distinctions individuelles</h2>
+          <h2 className="font-display text-lg text-ink-100">{ui(language, 'individualAwardsTitle')}</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-ink-300">
             {career.majorAwards.map((a, i) => (
               <li key={i}>🏅 {a}</li>
@@ -115,11 +121,11 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
 
       {careerEndSummary && careerEndSummary.newBadgeIds.length > 0 && (
         <div className="card p-5">
-          <h2 className="font-display text-lg text-ink-100">Nouveaux badges débloqués</h2>
+          <h2 className="font-display text-lg text-ink-100">{ui(language, 'newBadgesUnlockedTitle')}</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {careerEndSummary.newBadgeIds.map((id) => (
               <span key={id} className="rounded-full bg-gold-500/15 px-3 py-1 text-sm text-gold-400">
-                🏅 {badgeNameById(id)}
+                🏅 {badgeNameById(id, language)}
               </span>
             ))}
           </div>
@@ -128,7 +134,7 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
 
       {career.trophies.length > 0 && (
         <div className="card p-5">
-          <h2 className="font-display text-lg text-ink-100">Palmarès collectif</h2>
+          <h2 className="font-display text-lg text-ink-100">{ui(language, 'trophiesTitle')}</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-ink-300">
             {career.trophies.map((t, i) => (
               <li key={i}>🏆 {t}</li>
@@ -142,31 +148,31 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
           onClick={() => setShowHistory((v) => !v)}
           className="btn-outline w-full rounded-full py-2 text-sm"
         >
-          {showHistory ? 'Masquer' : '📅 Voir la carrière saison par saison'}
+          {showHistory ? ui(language, 'hideButton') : ui(language, 'viewSeasonBySeasonButton')}
         </button>
         {showHistory && (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
               <thead className="text-ink-500">
                 <tr>
-                  <th className="pb-2">Saison</th>
-                  <th className="pb-2">Âge</th>
-                  <th className="pb-2">Club</th>
-                  <th className="pb-2">Division</th>
-                  <th className="pb-2">Matchs</th>
+                  <th className="pb-2">{ui(language, 'homeSeasonAge')}</th>
+                  <th className="pb-2">{ui(language, 'tableAge')}</th>
+                  <th className="pb-2">{ui(language, 'tableClub')}</th>
+                  <th className="pb-2">{ui(language, 'tableDivision')}</th>
+                  <th className="pb-2">{ui(language, 'statMatches')}</th>
                   {isGK ? (
                     <>
-                      <th className="pb-2">Clean sheets</th>
-                      <th className="pb-2">Arrêts</th>
+                      <th className="pb-2">{ui(language, 'statCleanSheets')}</th>
+                      <th className="pb-2">{ui(language, 'statSaves')}</th>
                     </>
                   ) : (
                     <>
-                      <th className="pb-2">Buts</th>
-                      <th className="pb-2">Passes</th>
+                      <th className="pb-2">{ui(language, 'statGoals')}</th>
+                      <th className="pb-2">{ui(language, 'tablePasses')}</th>
                     </>
                   )}
-                  <th className="pb-2">Note</th>
-                  <th className="pb-2">Sélections</th>
+                  <th className="pb-2">{ui(language, 'tableRating')}</th>
+                  <th className="pb-2">{ui(language, 'tableCaps')}</th>
                 </tr>
               </thead>
               <tbody className="text-ink-300">
@@ -201,27 +207,24 @@ export default function CareerRecap({ career }: { career: PlayerState }) {
       <div className="card flex flex-col gap-3 p-5">
         <div className="flex flex-col gap-3 sm:flex-row">
           <button onClick={handleShare} className="btn-outline flex-1 rounded-full py-2.5 text-sm">
-            {shareCopied ? 'Copié !' : '📤 Partager'}
+            {shareCopied ? ui(language, 'copiedLabel') : ui(language, 'shareButton')}
           </button>
           <button onClick={handleChallengeFriend} className="btn-outline flex-1 rounded-full py-2.5 text-sm">
-            🆚 Défier un ami
+            {ui(language, 'challengeFriendButton')}
           </button>
         </div>
         {challengeCode && (
           <div className="rounded-lg bg-white/5 p-3 text-xs text-ink-300">
-            <p className="mb-1 text-ink-500">
-              Transmets ce code à un ami : il commencera avec exactement les mêmes conditions de départ et les mêmes
-              tirages aléatoires que toi, à lui de faire mieux !
-            </p>
+            <p className="mb-1 text-ink-500">{ui(language, 'challengeCodeExplainer')}</p>
             <code className="block break-all rounded bg-black/30 p-2 text-gold-400">{challengeCode}</code>
           </div>
         )}
         <div className="flex flex-col gap-3 sm:flex-row">
           <button onClick={startNew} className="btn-gold flex-1 rounded-full py-2.5 text-sm">
-            Rejouer une carrière
+            {ui(language, 'replayCareerButton')}
           </button>
           <button onClick={goHome} className="btn-outline flex-1 rounded-full py-2.5 text-sm">
-            Retour à l'accueil
+            {ui(language, 'backToHomeButton')}
           </button>
         </div>
       </div>

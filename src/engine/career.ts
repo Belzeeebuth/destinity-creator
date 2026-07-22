@@ -20,7 +20,7 @@ import {
   playKnockoutMatch,
 } from './tournament';
 import { evolveInvestments, generateMarketProfile } from './finance';
-import { clamp, formatMoney, adjustOverallBy } from './util';
+import { clamp, formatMoney, adjustOverallBy, loc } from './util';
 import { nextFloat, nextInt, nextChance, rngFromCarrier, type RngCarrier } from './rng';
 import { snapshotStats, diffStats, type StatDelta } from './diff';
 
@@ -237,7 +237,7 @@ export function resolveEventChoice(
   const before = snapshotStats(state);
   const resultText = choice.apply(state);
   rollSentimentOverallSwing(state, before, snapshotStats(state));
-  const deltas = diffStats(before, snapshotStats(state));
+  const deltas = diffStats(before, snapshotStats(state), state.language);
   state.eventsRemainingThisSeason = Math.max(0, state.eventsRemainingThisSeason - 1);
   state.pendingEvent = null;
   state.seasonLog.push(resultText);
@@ -268,7 +268,7 @@ export function acceptTournamentInvite(state: PlayerState): void {
 
 export function declineTournamentInvite(state: PlayerState): void {
   state.pendingTournamentInvite = null;
-  state.seasonLog.push("Tu déclines l'appel en sélection pour te concentrer sur ton club et ta progression.");
+  state.seasonLog.push(loc(state, "Tu déclines l'appel en sélection pour te concentrer sur ton club et ta progression.", 'You decline the national team call-up to focus on your club and your progress.'));
   state.phase = 'season_sim';
 }
 
@@ -279,7 +279,11 @@ export function playTournamentStep(state: PlayerState): TournamentMatchResult {
   const result = t.stage === 'groupes' ? playNextGroupMatch(state, position) : playKnockoutMatch(state, position);
   if (t.stage === 'termine') {
     state.seasonLog.push(
-      `${t.tournamentName} : ${t.finalStageLabel} — ${t.playerGoals} but${t.playerGoals > 1 ? 's' : ''}, ${t.playerAssists} passe${t.playerAssists > 1 ? 's' : ''} décisive${t.playerAssists > 1 ? 's' : ''}.`,
+      loc(
+        state,
+        `${t.tournamentName} : ${t.finalStageLabel} — ${t.playerGoals} but${t.playerGoals > 1 ? 's' : ''}, ${t.playerAssists} passe${t.playerAssists > 1 ? 's' : ''} décisive${t.playerAssists > 1 ? 's' : ''}.`,
+        `${t.tournamentName}: ${t.finalStageLabel} — ${t.playerGoals} goal${t.playerGoals > 1 ? 's' : ''}, ${t.playerAssists} assist${t.playerAssists > 1 ? 's' : ''}.`,
+      ),
     );
   }
   return result;
@@ -305,7 +309,13 @@ export function runSeasonSim(state: PlayerState, playStyle: PlayStyle = 'equilib
   const savedThisSeason = Math.round(netWage * 0.55);
   state.savings += savedThisSeason;
   if (savedThisSeason > 0) {
-    narrative.push(`💶 ${formatMoney(savedThisSeason)} épargnés cette saison (épargne totale : ${formatMoney(state.savings)}).`);
+    narrative.push(
+      loc(
+        state,
+        `💶 ${formatMoney(savedThisSeason)} épargnés cette saison (épargne totale : ${formatMoney(state.savings)}).`,
+        `💶 ${formatMoney(savedThisSeason)} saved this season (total savings: ${formatMoney(state.savings)}).`,
+      ),
+    );
   }
   narrative.push(...evolveInvestments(state));
   state.lastSeasonNarrative = narrative;
@@ -334,7 +344,7 @@ export function runSeasonSim(state: PlayerState, playStyle: PlayStyle = 'equilib
     },
     rngFromCarrier(state),
   );
-  state.lastGrowthDeltas = diffStats(before, snapshotStats(state));
+  state.lastGrowthDeltas = diffStats(before, snapshotStats(state), state.language);
 
   state.phase = 'season_end';
 }
@@ -368,8 +378,8 @@ export type NegotiationAspect = 'wage' | 'role' | 'clause';
 
 export function negotiateOffer(state: PlayerState, offerIndex: number, aspect: NegotiationAspect): string {
   const offer = state.pendingOffers[offerIndex];
-  if (!offer) return "Cette offre n'est plus disponible.";
-  if (offer.negotiated) return 'Tu as déjà négocié avec ce club ce marché-ci.';
+  if (!offer) return loc(state, "Cette offre n'est plus disponible.", 'This offer is no longer available.');
+  if (offer.negotiated) return loc(state, 'Tu as déjà négocié avec ce club ce marché-ci.', 'You have already negotiated with this club this transfer window.');
 
   const agent = getAgent(state.agentId);
   const clubTier = resolveClubTier(offer);
@@ -380,28 +390,35 @@ export function negotiateOffer(state: PlayerState, offerIndex: number, aspect: N
   if (nextChance(state, successChance)) {
     if (aspect === 'wage') {
       offer.wage = Math.round(offer.wage * (1.12 + nextFloat(state) * 0.18));
-      return `Négociation réussie : le salaire proposé grimpe à ${formatMoney(offer.wage)} par an.`;
+      return loc(state, `Négociation réussie : le salaire proposé grimpe à ${formatMoney(offer.wage)} par an.`, `Negotiation successful: the proposed wage rises to ${formatMoney(offer.wage)} per year.`);
     }
     if (aspect === 'role') {
       offer.role = 'titulaire';
-      return 'Le club cède : ton statut de titulaire est garanti par contrat.';
+      return loc(state, 'Le club cède : ton statut de titulaire est garanti par contrat.', 'The club gives in: your starting status is guaranteed by contract.');
     }
     offer.releaseClause = Math.round(offer.wage * nextInt(state, 12, 35));
-    return `Une clause libératoire de ${formatMoney(offer.releaseClause)} est ajoutée à ton contrat.`;
+    return loc(state, `Une clause libératoire de ${formatMoney(offer.releaseClause)} est ajoutée à ton contrat.`, `A release clause of ${formatMoney(offer.releaseClause)} is added to your contract.`);
   }
 
   if (nextChance(state, 0.25)) {
     state.pendingOffers = state.pendingOffers.filter((_, i) => i !== offerIndex);
-    return 'Le club se braque face à tes exigences et retire purement et simplement son offre !';
+    return loc(state, 'Le club se braque face à tes exigences et retire purement et simplement son offre !', 'The club balks at your demands and simply withdraws its offer!');
   }
-  return "Le club refuse ta demande. L'offre reste inchangée, tu peux toujours la signer.";
+  return loc(state, "Le club refuse ta demande. L'offre reste inchangée, tu peux toujours la signer.", 'The club refuses your request. The offer stays unchanged, you can still sign it.');
 }
 
 // ---------------- Phase : fin de saison / vieillissement ----------------
 
 export function finalizeSeasonEnd(state: PlayerState): { forcedRetirement: boolean } {
   if (state.age >= MAX_AGE) {
-    retireCareer(state, `Limite d'âge atteinte (${MAX_AGE} ans) : fin de carrière obligatoire.`);
+    retireCareer(
+      state,
+      loc(
+        state,
+        `Limite d'âge atteinte (${MAX_AGE} ans) : fin de carrière obligatoire.`,
+        `Age limit reached (${MAX_AGE}): mandatory end of career.`,
+      ),
+    );
     return { forcedRetirement: true };
   }
 

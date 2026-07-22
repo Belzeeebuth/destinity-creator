@@ -11,14 +11,24 @@ import { getPosition, type PositionCode } from '../data/positions';
 import { useGameStore } from '../state/store';
 import { newRandomSeed, mulberry32 } from '../engine/rng';
 import { randomName } from '../data/names';
+import { L, type Language } from '../i18n/language';
+import { ui } from '../i18n/ui';
 import CountryFlag from '../components/ui/CountryFlag';
-
-const STEPS = ['Pays', 'Poste', 'Origine', 'Mode de vie', 'Représentation', 'Résumé'];
 
 export default function CreationPage() {
   const navigate = useNavigate();
   const startCareer = useGameStore((s) => s.startCareer);
   const equippedAdvantageIds = useGameStore((s) => s.meta.equippedAdvantageIds);
+  const language = useGameStore((s) => s.language);
+
+  const STEPS = [
+    ui(language, 'stepCountry'),
+    ui(language, 'stepPosition'),
+    ui(language, 'stepBackground'),
+    ui(language, 'stepLifestyle'),
+    ui(language, 'stepAgent'),
+    ui(language, 'stepSummary'),
+  ];
 
   const [step, setStep] = useState(0);
   const [countryCode, setCountryCode] = useState<string | null>(null);
@@ -84,8 +94,8 @@ export default function CreationPage() {
         {step === 1 && <PositionStep value={positionCode} onSelect={setPositionCode} />}
         {step === 2 && (
           <SimpleChoiceGrid
-            title="Choisis ton origine sociale"
-            subtitle="Ton milieu d'origine influence tes attributs de départ et ta résilience face aux épreuves."
+            title={ui(language, 'backgroundStepTitle')}
+            subtitle={ui(language, 'backgroundStepSubtitle')}
             items={BACKGROUNDS}
             value={backgroundId}
             onSelect={setBackgroundId}
@@ -93,8 +103,8 @@ export default function CreationPage() {
         )}
         {step === 3 && (
           <SimpleChoiceGrid
-            title="Choisis ton mode de vie d'adolescent"
-            subtitle="Ta discipline quotidienne influence ta vitesse de progression et tes risques de blessure ou d'incident."
+            title={ui(language, 'lifestyleStepTitle')}
+            subtitle={ui(language, 'lifestyleStepSubtitle')}
             items={LIFESTYLES}
             value={lifestyleId}
             onSelect={setLifestyleId}
@@ -102,8 +112,8 @@ export default function CreationPage() {
         )}
         {step === 4 && (
           <SimpleChoiceGrid
-            title="Choisis ta représentation"
-            subtitle="Ton agent influence la fréquence et la qualité des offres de club que tu recevras."
+            title={ui(language, 'agentStepTitle')}
+            subtitle={ui(language, 'agentStepSubtitle')}
             items={AGENTS}
             value={agentId}
             onSelect={setAgentId}
@@ -120,6 +130,7 @@ export default function CreationPage() {
             lastName={lastName}
             setFirstName={setFirstName}
             setLastName={setLastName}
+            language={language}
           />
         )}
       </div>
@@ -130,7 +141,7 @@ export default function CreationPage() {
           disabled={step === 0}
           className="btn-outline rounded-full px-5 py-2 text-sm disabled:opacity-30"
         >
-          ← Retour
+          {ui(language, 'creationBack')}
         </button>
         {step < STEPS.length - 1 ? (
           <button
@@ -138,11 +149,11 @@ export default function CreationPage() {
             disabled={!canAdvance}
             className="btn-gold rounded-full px-6 py-2 text-sm disabled:opacity-40"
           >
-            Continuer →
+            {ui(language, 'creationContinue')}
           </button>
         ) : (
           <button onClick={handleStart} className="btn-gold rounded-full px-6 py-2 text-sm">
-            Commencer ma carrière ⚽
+            {ui(language, 'creationStart')}
           </button>
         )}
       </div>
@@ -160,6 +171,7 @@ function SummaryStep({
   lastName,
   setFirstName,
   setLastName,
+  language,
 }: {
   countryCode: string;
   positionCode: PositionCode;
@@ -170,6 +182,7 @@ function SummaryStep({
   lastName: string;
   setFirstName: (v: string) => void;
   setLastName: (v: string) => void;
+  language: Language;
 }) {
   const country = getCountry(countryCode);
   const position = getPosition(positionCode);
@@ -180,8 +193,8 @@ function SummaryStep({
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h2 className="font-display text-2xl text-ink-100">Dernière étape avant le coup d'envoi</h2>
-        <p className="mt-1 text-sm text-ink-300">Vérifie ton profil (et donne-lui un nom si tu le souhaites).</p>
+        <h2 className="font-display text-2xl text-ink-100">{ui(language, 'summaryTitle')}</h2>
+        <p className="mt-1 text-sm text-ink-300">{ui(language, 'summarySubtitle')}</p>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -189,13 +202,13 @@ function SummaryStep({
           <input
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Prénom (auto si vide)"
+            placeholder={ui(language, 'firstNamePlaceholder')}
             className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
           />
           <input
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
-            placeholder="Nom (auto si vide)"
+            placeholder={ui(language, 'lastNamePlaceholder')}
             className="rounded-lg border border-white/10 bg-pitch-900/60 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-500 focus:border-gold-500/50 focus:outline-none"
           />
         </div>
@@ -207,27 +220,27 @@ function SummaryStep({
             setLastName(generated.lastName);
           }}
           className="btn-outline shrink-0 rounded-lg px-4 py-2 text-sm hover:border-gold-500/50 hover:text-gold-400"
-          title="Générer un nom aléatoire"
+          title={ui(language, 'randomizeName')}
         >
-          🎲 Randomiser
+          {ui(language, 'randomizeName')}
         </button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
         <SummaryRow
-          label="Pays"
+          label={ui(language, 'stepCountry')}
           value={
             <span className="flex items-center gap-2">
-              <CountryFlag code={country.code} showCode={false} /> {country.name}
+              <CountryFlag code={country.code} showCode={false} /> {L(language, country.name, country.nameEn)}
             </span>
           }
-          sub={TIER_INFO[country.tier].difficulty}
+          sub={L(language, TIER_INFO[country.tier].difficulty, TIER_INFO[country.tier].difficultyEn)}
         />
-        <SummaryRow label="Poste" value={position.name} sub={position.short} />
-        <SummaryRow label="Origine" value={background.name} />
-        <SummaryRow label="Mode de vie" value={lifestyle.name} />
-        <SummaryRow label="Représentation" value={agent.name} />
-        <SummaryRow label="Âge de départ" value="16 ans" sub="Retraite obligatoire à 45 ans" />
+        <SummaryRow label={ui(language, 'stepPosition')} value={L(language, position.name, position.nameEn)} sub={position.short} />
+        <SummaryRow label={ui(language, 'stepBackground')} value={L(language, background.name, background.nameEn)} />
+        <SummaryRow label={ui(language, 'stepLifestyle')} value={L(language, lifestyle.name, lifestyle.nameEn)} />
+        <SummaryRow label={ui(language, 'stepAgent')} value={L(language, agent.name, agent.nameEn)} />
+        <SummaryRow label={ui(language, 'summaryAge')} value={ui(language, 'summaryAgeValue')} sub={ui(language, 'summaryAgeSub')} />
       </div>
     </div>
   );

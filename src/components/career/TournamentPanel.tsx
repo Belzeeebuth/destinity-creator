@@ -2,14 +2,16 @@ import type { PlayerState, TournamentState, TournamentMatchResult, TournamentTea
 import { useGameStore } from '../../state/store';
 import { getCountry } from '../../data/countries';
 import { goldenBootRank, playmakerRank, bestPlayerRank, averagePlayerRating } from '../../engine/tournament';
+import { L, type Language } from '../../i18n/language';
+import { ui, type UiKey } from '../../i18n/ui';
 import CountryFlag from '../ui/CountryFlag';
 
-const KNOCKOUT_LABELS: { stage: TournamentState['stage']; label: string }[] = [
-  { stage: 'groupes', label: 'Poules' },
-  { stage: 'huitiemes', label: '8es' },
-  { stage: 'quarts', label: 'Quarts' },
-  { stage: 'demies', label: 'Demies' },
-  { stage: 'finale', label: 'Finale' },
+const KNOCKOUT_LABELS: { stage: TournamentState['stage']; labelKey: UiKey }[] = [
+  { stage: 'groupes', labelKey: 'stageGroups' },
+  { stage: 'huitiemes', labelKey: 'stageR16' },
+  { stage: 'quarts', labelKey: 'stageQuarters' },
+  { stage: 'demies', labelKey: 'stageSemis' },
+  { stage: 'finale', labelKey: 'stageFinal' },
 ];
 
 export default function TournamentPanel({ career }: { career: PlayerState }) {
@@ -18,15 +20,16 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
   const continueAfterTournament = useGameStore((s) => s.continueAfterTournament);
   const acknowledgeTournamentMatch = useGameStore((s) => s.acknowledgeTournamentMatch);
   const lastTournamentMatch = useGameStore((s) => s.lastTournamentMatch);
+  const language = useGameStore((s) => s.language);
 
   if (!t) return null;
 
   if (lastTournamentMatch) {
-    return <MatchResultCard result={lastTournamentMatch} onContinue={acknowledgeTournamentMatch} />;
+    return <MatchResultCard result={lastTournamentMatch} onContinue={acknowledgeTournamentMatch} language={language} />;
   }
 
   if (t.stage === 'termine') {
-    return <TournamentRecap career={career} t={t} onContinue={continueAfterTournament} />;
+    return <TournamentRecap career={career} t={t} onContinue={continueAfterTournament} language={language} />;
   }
 
   const nextOpponentCode = t.stage === 'groupes' ? t.groupOpponents[t.groupMatchIndex] : null;
@@ -35,7 +38,7 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
 
   return (
     <div className="card animate-pop-in flex flex-col items-center gap-5 p-8 text-center">
-      <StageStepper current={t.stage} />
+      <StageStepper current={t.stage} language={language} />
       <h2 className="font-display text-2xl text-ink-100">{t.tournamentName}</h2>
 
       {inKnockout ? (
@@ -43,43 +46,43 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
           <span className="text-3xl" aria-hidden>
             🏟️
           </span>
-          <p className="text-[11px] uppercase tracking-wide text-gold-400">Phase à élimination directe</p>
+          <p className="text-[11px] uppercase tracking-wide text-gold-400">{ui(language, 'knockoutPhaseLabel')}</p>
           <p className="font-display text-xl text-ink-100">{t.finalStageLabel}</p>
-          <p className="text-xs text-ink-400">Match couperet : la défaite met fin au tournoi.</p>
+          <p className="text-xs text-ink-400">{ui(language, 'knockoutSub')}</p>
         </div>
       ) : (
         <p className="text-xs uppercase tracking-wide text-gold-400">{t.finalStageLabel}</p>
       )}
 
-      {t.stage === 'groupes' && t.groupTable.length > 0 && <GroupTable table={t.groupTable} />}
+      {t.stage === 'groupes' && t.groupTable.length > 0 && <GroupTable table={t.groupTable} language={language} />}
 
       {inKnockout && t.groupTable.length > 0 && (
         <details className="w-full text-xs text-ink-400">
           <summary className="cursor-pointer select-none text-ink-500 transition hover:text-ink-300">
-            Revoir le classement de la phase de poules
+            {ui(language, 'reviewGroupStanding')}
           </summary>
           <div className="mt-2">
-            <GroupTable table={t.groupTable} />
+            <GroupTable table={t.groupTable} language={language} />
           </div>
         </details>
       )}
 
       {nextOpponent && (
         <div className="flex items-center gap-2 text-sm text-ink-300">
-          Prochain adversaire : <CountryFlag code={nextOpponent.code} size="sm" /> {nextOpponent.name}
+          {ui(language, 'nextOpponentLabel')} <CountryFlag code={nextOpponent.code} size="sm" /> {L(language, nextOpponent.name, nextOpponent.nameEn)}
         </div>
       )}
 
       {t.matches.length > 0 && <MatchLog matches={t.matches} />}
 
       <button onClick={playTournamentStep} className="btn-gold rounded-full px-8 py-2.5 text-sm">
-        ⚽ Disputer {inKnockout ? `le ${t.finalStageLabel.toLowerCase()}` : 'le match'}
+        {ui(language, 'playMatch')} {inKnockout ? t.finalStageLabel.toLowerCase() : ui(language, 'playMatchGeneric')}
       </button>
     </div>
   );
 }
 
-function StageStepper({ current }: { current: TournamentState['stage'] }) {
+function StageStepper({ current, language }: { current: TournamentState['stage']; language: Language }) {
   const currentIndex = KNOCKOUT_LABELS.findIndex((s) => s.stage === current);
   return (
     <div className="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
@@ -94,14 +97,14 @@ function StageStepper({ current }: { current: TournamentState['stage'] }) {
                 : 'bg-white/5 text-ink-500'
           }`}
         >
-          {s.label}
+          {ui(language, s.labelKey)}
         </span>
       ))}
     </div>
   );
 }
 
-function GroupTable({ table }: { table: TournamentTeamStanding[] }) {
+function GroupTable({ table, language }: { table: TournamentTeamStanding[]; language: Language }) {
   const ranked = [...table].sort(
     (a, b) => b.points - a.points || b.goalsFor - b.goalsAgainst - (a.goalsFor - a.goalsAgainst) || b.goalsFor - a.goalsFor,
   );
@@ -110,13 +113,13 @@ function GroupTable({ table }: { table: TournamentTeamStanding[] }) {
       <table className="w-full min-w-[420px] text-left text-xs">
         <thead className="text-ink-500">
           <tr>
-            <th className="pb-1.5">Équipe</th>
-            <th className="pb-1.5">J</th>
-            <th className="pb-1.5">G</th>
-            <th className="pb-1.5">N</th>
-            <th className="pb-1.5">P</th>
-            <th className="pb-1.5">Diff</th>
-            <th className="pb-1.5">Pts</th>
+            <th className="pb-1.5">{ui(language, 'tableTeam')}</th>
+            <th className="pb-1.5">{ui(language, 'tableP')}</th>
+            <th className="pb-1.5">{ui(language, 'tableW')}</th>
+            <th className="pb-1.5">{ui(language, 'tableD')}</th>
+            <th className="pb-1.5">{ui(language, 'tableL')}</th>
+            <th className="pb-1.5">{ui(language, 'tableDiff')}</th>
+            <th className="pb-1.5">{ui(language, 'tablePts')}</th>
           </tr>
         </thead>
         <tbody className="text-ink-300">
@@ -156,7 +159,7 @@ function MatchLog({ matches }: { matches: TournamentMatchResult[] }) {
   );
 }
 
-function MatchResultCard({ result, onContinue }: { result: TournamentMatchResult; onContinue: () => void }) {
+function MatchResultCard({ result, onContinue, language }: { result: TournamentMatchResult; onContinue: () => void; language: Language }) {
   const won = result.wonOnPenalties !== undefined ? result.wonOnPenalties : result.scoreFor > result.scoreAgainst;
   const draw = result.wonOnPenalties === undefined && result.scoreFor === result.scoreAgainst;
   const color = won ? 'text-emerald-400' : draw ? 'text-gold-400' : 'text-red-400';
@@ -189,12 +192,14 @@ function MatchResultCard({ result, onContinue }: { result: TournamentMatchResult
 
       <p className="max-w-md text-sm text-ink-300">{result.narrative}</p>
       <div className="flex items-center gap-2 text-xs text-ink-400">
-        <span className="rounded-full bg-white/5 px-3 py-1">Note : {result.playerRating.toFixed(1)}/10</span>
+        <span className="rounded-full bg-white/5 px-3 py-1">
+          {ui(language, 'ratingLabel')} {result.playerRating.toFixed(1)}/10
+        </span>
         {result.playerGoals > 0 && <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-emerald-400">⚽ {result.playerGoals}</span>}
         {result.playerAssists > 0 && <span className="rounded-full bg-sky-500/15 px-3 py-1 text-sky-400">🎯 {result.playerAssists}</span>}
       </div>
       <button onClick={onContinue} className="btn-gold mt-2 rounded-full px-6 py-2 text-sm">
-        Continuer
+        {ui(language, 'continueButton')}
       </button>
     </div>
   );
@@ -208,11 +213,17 @@ interface RankingRow {
   isPlayer: boolean;
 }
 
-function buildRanking(career: PlayerState, t: TournamentState, statKey: 'goals' | 'assists' | 'rating'): RankingRow[] {
+function buildRanking(career: PlayerState, t: TournamentState, statKey: 'goals' | 'assists' | 'rating', language: Language): RankingRow[] {
   const playerValue = statKey === 'goals' ? t.playerGoals : statKey === 'assists' ? t.playerAssists : averagePlayerRating(t);
   const country = getCountry(career.countryCode);
   const rows: RankingRow[] = [
-    { name: `${career.firstName} ${career.lastName}`, countryCode: country.code, countryName: country.name, value: playerValue, isPlayer: true },
+    {
+      name: `${career.firstName} ${career.lastName}`,
+      countryCode: country.code,
+      countryName: L(language, country.name, country.nameEn),
+      value: playerValue,
+      isPlayer: true,
+    },
     ...t.rivals.map((r) => ({
       name: r.name,
       countryCode: r.countryCode,
@@ -261,10 +272,10 @@ function RankingTable({ title, icon, rows, rank, decimals = 0 }: { title: string
   );
 }
 
-function TournamentRecap({ career, t, onContinue }: { career: PlayerState; t: TournamentState; onContinue: () => void }) {
-  const goalsRanking = buildRanking(career, t, 'goals');
-  const assistsRanking = buildRanking(career, t, 'assists');
-  const ratingRanking = buildRanking(career, t, 'rating');
+function TournamentRecap({ career, t, onContinue, language }: { career: PlayerState; t: TournamentState; onContinue: () => void; language: Language }) {
+  const goalsRanking = buildRanking(career, t, 'goals', language);
+  const assistsRanking = buildRanking(career, t, 'assists', language);
+  const ratingRanking = buildRanking(career, t, 'rating', language);
 
   return (
     <div className="animate-pop-in flex flex-col gap-5">
@@ -272,30 +283,31 @@ function TournamentRecap({ career, t, onContinue }: { career: PlayerState; t: To
         <span className="text-5xl">{t.champion ? '🏆' : '👋'}</span>
         <h2 className="font-display text-2xl text-ink-100">{t.finalStageLabel}</h2>
         <p className="text-sm text-ink-300">
-          {t.tournamentName} — {t.playerGoals} but{t.playerGoals > 1 ? 's' : ''}, {t.playerAssists} passe
-          {t.playerAssists > 1 ? 's' : ''} décisive{t.playerAssists > 1 ? 's' : ''} en {t.matches.length} match
-          {t.matches.length > 1 ? 's' : ''}, note moyenne {averagePlayerRating(t).toFixed(1)}/10.
+          {t.tournamentName} — {t.playerGoals} {ui(language, t.playerGoals > 1 ? 'tournamentRecapGoals' : 'tournamentRecapGoal')},{' '}
+          {t.playerAssists} {ui(language, t.playerAssists > 1 ? 'tournamentRecapAssists' : 'tournamentRecapAssist')}{' '}
+          {language === 'en' ? 'in' : 'en'} {t.matches.length} {ui(language, t.matches.length > 1 ? 'tournamentRecapMatches' : 'tournamentRecapMatch')},{' '}
+          {ui(language, 'tournamentRecapAvgRating')} {averagePlayerRating(t).toFixed(1)}/10.
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <RankingTable title="Meilleur buteur" icon="⚽" rows={goalsRanking} rank={goldenBootRank(t)} />
-        <RankingTable title="Meilleur passeur" icon="🎯" rows={assistsRanking} rank={playmakerRank(t)} />
-        <RankingTable title="Meilleur joueur" icon="🌟" rows={ratingRanking} rank={bestPlayerRank(t)} decimals={1} />
+        <RankingTable title={ui(language, 'topScorerTitle')} icon="⚽" rows={goalsRanking} rank={goldenBootRank(t)} />
+        <RankingTable title={ui(language, 'topPlaymakerTitle')} icon="🎯" rows={assistsRanking} rank={playmakerRank(t)} />
+        <RankingTable title={ui(language, 'bestPlayerTitle')} icon="🌟" rows={ratingRanking} rank={bestPlayerRank(t)} decimals={1} />
       </div>
 
       <div className="card p-5">
-        <h3 className="mb-3 text-sm font-semibold text-ink-100">Classement final de la poule</h3>
-        <GroupTable table={t.groupTable} />
+        <h3 className="mb-3 text-sm font-semibold text-ink-100">{ui(language, 'finalGroupStanding')}</h3>
+        <GroupTable table={t.groupTable} language={language} />
       </div>
 
       <div className="card p-5">
-        <h3 className="mb-3 text-sm font-semibold text-ink-100">Parcours dans la compétition</h3>
+        <h3 className="mb-3 text-sm font-semibold text-ink-100">{ui(language, 'tournamentJourney')}</h3>
         <MatchLog matches={t.matches} />
       </div>
 
       <button onClick={onContinue} className="btn-gold self-center rounded-full px-8 py-2.5 text-sm">
-        Continuer vers la saison en club
+        {ui(language, 'continueToClubSeason')}
       </button>
     </div>
   );

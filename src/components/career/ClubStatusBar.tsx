@@ -5,11 +5,15 @@ import { resolveClubTier } from '../../data/clubs';
 import { getCountry } from '../../data/countries';
 import { getPosition } from '../../data/positions';
 import { formatMoney } from '../../engine/util';
+import { useGameStore } from '../../state/store';
+import { L } from '../../i18n/language';
+import { ui } from '../../i18n/ui';
 import CountryFlag from '../ui/CountryFlag';
 
 export default function ClubStatusBar({ career }: { career: PlayerState }) {
+  const language = useGameStore((s) => s.language);
   const country = getCountry(career.countryCode);
-  const clubTier = career.club ? resolveClubTier(career.club) : null;
+  const clubTier = career.club ? resolveClubTier(career.club, language) : null;
   const overall = overallRating(career.attributes, getPosition(career.positionCode).weights);
 
   const prevOverallRef = useRef(overall);
@@ -32,11 +36,12 @@ export default function ClubStatusBar({ career }: { career: PlayerState }) {
             {career.captain && <span className="ml-1.5 text-gold-400">©</span>}
           </div>
           <div className="text-xs text-ink-400">
-            {career.age} ans · Saison {career.season} · {country.name}
+            {career.age} {ui(language, 'homeYearsOld')} · {ui(language, 'homeSeasonAge')} {career.season} ·{' '}
+            {L(language, country.name, country.nameEn)}
           </div>
         </div>
         <div className="ml-2 flex flex-col items-center rounded-xl border border-gold-500/30 bg-gold-500/10 px-3 py-1">
-          <span className="text-[9px] uppercase tracking-wide text-gold-400/80">Note</span>
+          <span className="text-[9px] uppercase tracking-wide text-gold-400/80">{ui(language, 'statusRating')}</span>
           <span className="font-display text-xl font-bold leading-none text-gold-400">{overall.toFixed(1)}</span>
           {delta !== 0 && (
             <span
@@ -51,15 +56,19 @@ export default function ClubStatusBar({ career }: { career: PlayerState }) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-        <Info label="Club" value={career.club ? career.club.name : 'Libre'} sub={clubTier?.label} />
-        <Info label="Salaire" value={formatMoney(career.wage)} sub="par an" />
-        <Info label="Valeur" value={formatMoney(career.marketValue)} />
-        <Info label="Sélections" value={`${career.caps}`} sub={`${career.capGoals} buts`} />
+        <Info
+          label={ui(language, 'statusClub')}
+          value={career.club ? career.club.name : ui(language, 'statusFreeAgent')}
+          sub={clubTier?.label}
+        />
+        <Info label={ui(language, 'statusWage')} value={formatMoney(career.wage)} sub={ui(language, 'statusPerYear')} />
+        <Info label={ui(language, 'statusValue')} value={formatMoney(career.marketValue)} />
+        <Info label={ui(language, 'statusCaps')} value={`${career.caps}`} sub={`${career.capGoals} ${ui(language, 'statusGoals')}`} />
       </div>
 
       <div className="grid grid-cols-2 gap-2 sm:w-64 sm:grid-cols-1">
-        <Meter label="Moral" value={career.morale} />
-        <Meter label="Forme" value={career.fitness} />
+        <Meter label={ui(language, 'statusMorale')} value={career.morale} />
+        <Meter label={ui(language, 'statusFitness')} value={career.fitness} />
       </div>
     </div>
   );
