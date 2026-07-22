@@ -86,7 +86,19 @@ export interface PendingEvent {
 
 // ---------------- Vie personnelle : patrimoine et relation ----------------
 
-export type InvestmentId = 'livret' | 'immobilier' | 'actions' | 'crypto';
+export type InvestmentId =
+  | 'livret'
+  | 'immobilier'
+  | 'actions'
+  | 'bitcoin'
+  | 'ethereum'
+  | 'solana'
+  | 'bnb'
+  | 'xrp'
+  | 'dogecoin'
+  | 'cardano'
+  | 'polkadot'
+  | 'moonshiba';
 
 export interface InvestmentHolding {
   id: InvestmentId;
