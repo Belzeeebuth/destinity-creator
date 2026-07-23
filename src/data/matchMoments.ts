@@ -21,7 +21,7 @@ function pickRivalClub(state: PlayerState, rng: Rng): string {
 
 function matchHeader(state: PlayerState): { title: string; cup: string; clubName: string } {
   const club = state.club!;
-  const cup = domesticCupName(state.countryCode, state.language);
+  const cup = domesticCupName(club.countryCode, state.language);
   const rival = pickRivalClub(state, rngFromCarrier(state));
   const title = loc(state, `${club.name} – ${rival} (finale de ${cup})`, `${club.name} – ${rival} (${cup} final)`);
   return { title, cup, clubName: club.name };
