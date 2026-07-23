@@ -15,10 +15,13 @@ export default function SeasonEndPanel({ career }: { career: PlayerState }) {
   const isGK = getPosition(career.positionCode).code === 'GK';
 
   return (
-    <div className="card p-6">
-      <h2 className="font-display text-2xl text-ink-100">
-        {ui(language, 'seasonRecapTitle')} {career.season}
-      </h2>
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>
+          {ui(language, 'seasonRecapTitle')} {career.season}
+        </span>
+      </div>
+      <div className="p-6">
       {record && (
         <div className="mt-4 grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
           <Stat label={ui(language, 'statMatches')} value={record.appearances} />
@@ -122,6 +125,7 @@ export default function SeasonEndPanel({ career }: { career: PlayerState }) {
             {ui(language, 'retireNowButton')}
           </button>
         )}
+      </div>
       </div>
     </div>
   );

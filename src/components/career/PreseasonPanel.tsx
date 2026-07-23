@@ -27,42 +27,46 @@ export default function PreseasonPanel({ career }: { career: PlayerState }) {
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <div className="card p-5">
-        <h2 className="font-display text-2xl text-ink-100">
-          {ui(language, 'preseasonTitle')} {career.season}
-        </h2>
-        <p className="mt-1 text-sm text-ink-300">{ui(language, 'preseasonSubtitle')}</p>
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {visibleAttrs.map((attr) => (
-            <button
-              key={attr}
-              onClick={() => handlePick(attr)}
-              className={`choice-option rounded-lg px-3 py-2 text-sm ${
-                picked === attr ? 'is-selected' : 'btn-outline hover:border-gold-500/50 hover:text-gold-400'
-              }`}
-            >
-              <span aria-hidden>{ATTRIBUTE_ICONS[attr]}</span> {labels[attr]}
-            </button>
-          ))}
+      <div className="panel-retro">
+        <div className="panel-header-bar">
+          <span>
+            {ui(language, 'preseasonTitle')} {career.season}
+          </span>
         </div>
-
-        {ownedConsumables.length > 0 && (
-          <div className="mt-5 border-t border-white/10 pt-4">
-            <p className="mb-2 text-xs uppercase tracking-wide text-ink-500">{ui(language, 'availableItems')}</p>
-            <div className="flex flex-col gap-2">
-              {ownedConsumables.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => activateConsumable(c.id)}
-                  className="btn-outline flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:border-gold-500/50 hover:text-gold-400"
-                >
-                  <span>{L(language, c.name, c.nameEn)}</span>
-                  <span className="text-xs text-ink-500">x{consumablesOwned[c.id]}</span>
-                </button>
-              ))}
-            </div>
+        <div className="p-5">
+          <p className="text-sm text-ink-300">{ui(language, 'preseasonSubtitle')}</p>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {visibleAttrs.map((attr) => (
+              <button
+                key={attr}
+                onClick={() => handlePick(attr)}
+                className={`choice-option rounded-sm px-3 py-2 text-sm ${
+                  picked === attr ? 'is-selected' : 'btn-outline hover:border-gold-500/50 hover:text-gold-400'
+                }`}
+              >
+                <span aria-hidden>{ATTRIBUTE_ICONS[attr]}</span> {labels[attr]}
+              </button>
+            ))}
           </div>
-        )}
+
+          {ownedConsumables.length > 0 && (
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <p className="mb-2 text-xs uppercase tracking-wide text-ink-500">{ui(language, 'availableItems')}</p>
+              <div className="flex flex-col gap-2">
+                {ownedConsumables.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => activateConsumable(c.id)}
+                    className="btn-outline flex items-center justify-between rounded-sm px-3 py-2 text-sm hover:border-gold-500/50 hover:text-gold-400"
+                  >
+                    <span>{L(language, c.name, c.nameEn)}</span>
+                    <span className="text-xs text-ink-500">x{consumablesOwned[c.id]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       <AttributesPanel career={career} />
     </div>

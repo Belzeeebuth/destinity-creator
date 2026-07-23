@@ -66,9 +66,12 @@ function TraditionalInvestmentsPanel({ career, language }: { career: PlayerState
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="font-display text-xl text-ink-100">{ui(language, 'traditionalInvestmentsTitle')}</h2>
-      <p className="mt-1 text-sm text-ink-300">{ui(language, 'traditionalInvestmentsSubtitle')}</p>
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>{ui(language, 'traditionalInvestmentsTitle')}</span>
+      </div>
+      <div className="p-5">
+      <p className="text-sm text-ink-300">{ui(language, 'traditionalInvestmentsSubtitle')}</p>
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         {TRADITIONAL_INVESTMENTS.map((def) => {
@@ -126,6 +129,7 @@ function TraditionalInvestmentsPanel({ career, language }: { career: PlayerState
           );
         })}
       </div>
+      </div>
     </div>
   );
 }
@@ -144,9 +148,12 @@ function CryptoPanel({ career, language }: { career: PlayerState; language: Lang
   }
 
   return (
-    <div className="card p-5">
-      <h2 className="font-display text-xl text-ink-100">{ui(language, 'cryptoMarketTitle')}</h2>
-      <p className="mt-1 text-sm text-ink-300">
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>{ui(language, 'cryptoMarketTitle')}</span>
+      </div>
+      <div className="p-5">
+      <p className="text-sm text-ink-300">
         {ui(language, 'cryptoMarketSubtitle').replace('{n}', String(CRYPTO_INVESTMENTS.length))}
       </p>
 
@@ -179,6 +186,7 @@ function CryptoPanel({ career, language }: { career: PlayerState; language: Lang
             ))}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );
@@ -276,9 +284,12 @@ function PrestigePanel({ career, language }: { career: PlayerState; language: La
   const purchasePrestigeAsset = useGameStore((s) => s.purchasePrestigeAsset);
 
   return (
-    <div className="card p-5">
-      <h2 className="font-display text-xl text-ink-100">{ui(language, 'prestigeTitle')}</h2>
-      <p className="mt-1 text-sm text-ink-300">{ui(language, 'prestigeSubtitle')}</p>
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>{ui(language, 'prestigeTitle')}</span>
+      </div>
+      <div className="p-5">
+      <p className="text-sm text-ink-300">{ui(language, 'prestigeSubtitle')}</p>
       {career.reputationShield > 0 && (
         <p className="mt-2 text-xs text-gold-400">
           {ui(language, 'reputationShieldActive').replace('{n}', String(Math.round(career.reputationShield * 100)))}
@@ -311,6 +322,7 @@ function PrestigePanel({ career, language }: { career: PlayerState; language: La
           );
         })}
       </div>
+      </div>
     </div>
   );
 }
@@ -321,10 +333,13 @@ function PersonalLifePanel({ career, language }: { career: PlayerState; language
   const relationship = career.relationship;
 
   return (
-    <div className="card p-5">
-      <h2 className="font-display text-xl text-ink-100">{ui(language, 'personalLifeTitle')}</h2>
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>{ui(language, 'personalLifeTitle')}</span>
+      </div>
+      <div className="p-5">
 
-      <div className="mt-3 rounded-lg border border-white/10 p-4">
+      <div className="rounded-lg border border-white/10 p-4">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-ink-100">
             {relationship.status === 'celibataire' && ui(language, 'statusSingle')}
@@ -372,6 +387,7 @@ function PersonalLifePanel({ career, language }: { career: PlayerState; language
           disabled={relationship.status === 'celibataire'}
           savings={career.savings}
         />
+      </div>
       </div>
     </div>
   );

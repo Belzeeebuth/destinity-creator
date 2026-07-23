@@ -37,9 +37,12 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
   const inKnockout = t.stage !== 'groupes';
 
   return (
-    <div className="card animate-pop-in flex flex-col items-center gap-5 p-8 text-center">
+    <div className="panel-retro animate-pop-in">
+      <div className="panel-header-bar justify-center">
+        <span>{t.tournamentName}</span>
+      </div>
+      <div className="flex flex-col items-center gap-5 p-8 text-center">
       <StageStepper current={t.stage} language={language} />
-      <h2 className="font-display text-2xl text-ink-100">{t.tournamentName}</h2>
 
       {inKnockout ? (
         <div className="animate-pop-in flex flex-col items-center gap-1.5 rounded-2xl border border-gold-500/40 bg-gold-500/10 px-6 py-4">
@@ -78,6 +81,7 @@ export default function TournamentPanel({ career }: { career: PlayerState }) {
       <button onClick={playTournamentStep} className="btn-gold rounded-full px-8 py-2.5 text-sm">
         {ui(language, 'playMatch')} {inKnockout ? t.finalStageLabel.toLowerCase() : ui(language, 'playMatchGeneric')}
       </button>
+      </div>
     </div>
   );
 }
@@ -240,14 +244,14 @@ function RankingTable({ title, icon, rows, rank, decimals = 0 }: { title: string
   const playerInTop = top.some((r) => r.isPlayer);
   const playerRow = rows.find((r) => r.isPlayer);
   return (
-    <div className="card p-4 text-left">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-sm font-semibold text-ink-100">
+    <div className="panel-retro text-left">
+      <div className="panel-header-bar panel-header-bar--dark">
+        <span>
           {icon} {title}
         </span>
-        <span className="rounded-full bg-gold-500/15 px-2.5 py-0.5 text-xs font-bold text-gold-400">#{rank}</span>
+        <span className="rounded-sm bg-gold-500/20 px-2 py-0.5 text-xs font-bold text-gold-400">#{rank}</span>
       </div>
-      <div className="flex flex-col gap-1 text-xs">
+      <div className="flex flex-col gap-1 p-3 text-xs">
         {top.map((r, i) => (
           <div
             key={i}
@@ -279,15 +283,20 @@ function TournamentRecap({ career, t, onContinue, language }: { career: PlayerSt
 
   return (
     <div className="animate-pop-in flex flex-col gap-5">
-      <div className="card flex flex-col items-center gap-3 p-8 text-center">
-        <span className="text-5xl">{t.champion ? '🏆' : '👋'}</span>
-        <h2 className="font-display text-2xl text-ink-100">{t.finalStageLabel}</h2>
-        <p className="text-sm text-ink-300">
-          {t.tournamentName} — {t.playerGoals} {ui(language, t.playerGoals > 1 ? 'tournamentRecapGoals' : 'tournamentRecapGoal')},{' '}
-          {t.playerAssists} {ui(language, t.playerAssists > 1 ? 'tournamentRecapAssists' : 'tournamentRecapAssist')}{' '}
-          {language === 'en' ? 'in' : 'en'} {t.matches.length} {ui(language, t.matches.length > 1 ? 'tournamentRecapMatches' : 'tournamentRecapMatch')},{' '}
-          {ui(language, 'tournamentRecapAvgRating')} {averagePlayerRating(t).toFixed(1)}/10.
-        </p>
+      <div className="panel-retro">
+        <div className="panel-header-bar justify-center">
+          <span>{t.tournamentName}</span>
+        </div>
+        <div className="flex flex-col items-center gap-3 p-8 text-center">
+          <span className="text-5xl">{t.champion ? '🏆' : '👋'}</span>
+          <h2 className="font-display text-2xl text-ink-100">{t.finalStageLabel}</h2>
+          <p className="text-sm text-ink-300">
+            {t.playerGoals} {ui(language, t.playerGoals > 1 ? 'tournamentRecapGoals' : 'tournamentRecapGoal')},{' '}
+            {t.playerAssists} {ui(language, t.playerAssists > 1 ? 'tournamentRecapAssists' : 'tournamentRecapAssist')}{' '}
+            {language === 'en' ? 'in' : 'en'} {t.matches.length} {ui(language, t.matches.length > 1 ? 'tournamentRecapMatches' : 'tournamentRecapMatch')},{' '}
+            {ui(language, 'tournamentRecapAvgRating')} {averagePlayerRating(t).toFixed(1)}/10.
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -296,14 +305,22 @@ function TournamentRecap({ career, t, onContinue, language }: { career: PlayerSt
         <RankingTable title={ui(language, 'bestPlayerTitle')} icon="🌟" rows={ratingRanking} rank={bestPlayerRank(t)} decimals={1} />
       </div>
 
-      <div className="card p-5">
-        <h3 className="mb-3 text-sm font-semibold text-ink-100">{ui(language, 'finalGroupStanding')}</h3>
-        <GroupTable table={t.groupTable} language={language} />
+      <div className="panel-retro">
+        <div className="panel-header-bar panel-header-bar--green">
+          <span>{ui(language, 'finalGroupStanding')}</span>
+        </div>
+        <div className="p-5">
+          <GroupTable table={t.groupTable} language={language} />
+        </div>
       </div>
 
-      <div className="card p-5">
-        <h3 className="mb-3 text-sm font-semibold text-ink-100">{ui(language, 'tournamentJourney')}</h3>
-        <MatchLog matches={t.matches} />
+      <div className="panel-retro">
+        <div className="panel-header-bar panel-header-bar--green">
+          <span>{ui(language, 'tournamentJourney')}</span>
+        </div>
+        <div className="p-5">
+          <MatchLog matches={t.matches} />
+        </div>
       </div>
 
       <button onClick={onContinue} className="btn-gold self-center rounded-full px-8 py-2.5 text-sm">

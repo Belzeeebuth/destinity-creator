@@ -23,11 +23,12 @@ export default function TransferWindowPanel({ career }: { career: PlayerState })
   const [negotiatingIndex, setNegotiatingIndex] = useState<number | null>(null);
 
   return (
-    <div className="card p-5">
-      <h2 className="font-display text-2xl text-ink-100">
-        {career.club ? ui(language, 'transferMercatoTitle') : ui(language, 'transferFirstClubTitle')}
-      </h2>
-      <p className="mt-1 text-sm text-ink-300">
+    <div className="panel-retro">
+      <div className="panel-header-bar">
+        <span>{career.club ? ui(language, 'transferMercatoTitle') : ui(language, 'transferFirstClubTitle')}</span>
+      </div>
+      <div className="p-5">
+      <p className="text-sm text-ink-300">
         {career.club
           ? `${ui(language, 'transferMercatoSubPrefix')} ${career.club.name} ${ui(language, 'transferMercatoSubSuffix')}`
           : ui(language, 'transferFirstClubSub')}
@@ -114,6 +115,7 @@ export default function TransferWindowPanel({ career }: { career: PlayerState })
       <button onClick={declineOffers} className="btn-outline mt-5 w-full rounded-full py-2 text-sm">
         {career.club ? ui(language, 'stayAtCurrentClub') : ui(language, 'stayFreeAgent')}
       </button>
+      </div>
     </div>
   );
 }

@@ -57,26 +57,30 @@ export default function EventPanel({ career }: { career: PlayerState }) {
   }
 
   return (
-    <div className="card animate-pop-in p-6">
-      <span className="text-xs uppercase tracking-wide text-gold-400">
-        {career.phase === 'mid_season'
-          ? `${ui(language, 'midSeasonBreak')} ${career.season}`
-          : `${ui(language, 'eventHeader')} ${career.season}`}
-      </span>
-      <h2 className="mt-1 font-display text-2xl text-ink-100">{career.pendingEvent.title}</h2>
-      <p className="mt-2 text-ink-300">{career.pendingEvent.text}</p>
-      <div className="mt-5 flex flex-col gap-2">
-        {career.pendingEvent.choices.map((choice, i) => (
-          <button
-            key={i}
-            onClick={() => handlePick(i)}
-            className={`choice-option rounded-lg px-4 py-3 text-left text-sm ${
-              picked === i ? 'is-selected' : 'btn-outline hover:border-gold-500/50 hover:text-gold-400'
-            }`}
-          >
-            {choice.label}
-          </button>
-        ))}
+    <div className="panel-retro animate-pop-in">
+      <div className="panel-header-bar panel-header-bar--dark">
+        <span>
+          {career.phase === 'mid_season'
+            ? `${ui(language, 'midSeasonBreak')} ${career.season}`
+            : `${ui(language, 'eventHeader')} ${career.season}`}
+        </span>
+      </div>
+      <div className="p-6">
+        <h2 className="font-display text-2xl text-ink-100">{career.pendingEvent.title}</h2>
+        <p className="mt-2 text-ink-300">{career.pendingEvent.text}</p>
+        <div className="mt-5 flex flex-col gap-2">
+          {career.pendingEvent.choices.map((choice, i) => (
+            <button
+              key={i}
+              onClick={() => handlePick(i)}
+              className={`choice-option rounded-sm px-4 py-3 text-left text-sm ${
+                picked === i ? 'is-selected' : 'btn-outline hover:border-gold-500/50 hover:text-gold-400'
+              }`}
+            >
+              {choice.label}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
