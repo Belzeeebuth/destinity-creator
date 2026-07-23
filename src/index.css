@@ -146,84 +146,107 @@ textarea:focus-visible,
 
 .card {
   position: relative;
-  background: linear-gradient(180deg, #142e1f 0%, #0a1a12 100%);
-  border: 2px solid #335c40;
-  border-radius: 0.5rem;
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.94) 0%, rgba(11, 18, 16, 0.96) 100%);
+  border: 1px solid rgba(180, 200, 190, 0.22);
+  border-radius: 0.35rem;
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    inset 0 -2px 0 0 rgba(0, 0, 0, 0.35),
-    0 16px 32px -18px rgba(0, 0, 0, 0.75),
-    0 2px 8px -3px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
+    0 14px 30px -18px rgba(0, 0, 0, 0.8),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 3px;
-  border-radius: calc(0.5rem - 3px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  pointer-events: none;
-}
 
-/* ---------------- Bandeau d'en-tête coloré façon menu de console de foot ---------------- */
-/* Panneau "console rétro" : bordure épaisse à double liseré, coins peu arrondis, bandeau
-   de titre plein-bleed en haut (façon feuille de match / écran de composition d'équipe). */
+/* ---------------- Panneaux façon menu de console de foot (PES/Winning Eleven) ---------------- */
+/* Fond ardoise semi-transparent, bordure fine, coins à peine arrondis : un cadre discret
+   qui laisse la texture de fond respirer, plutôt qu'un panneau "carte" épais et opaque. */
 .panel-retro {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #142e1f 0%, #0a1a12 100%);
-  border: 2px solid #335c40;
-  border-radius: 0.5rem;
+  background: linear-gradient(180deg, rgba(28, 38, 34, 0.94) 0%, rgba(11, 18, 16, 0.96) 100%);
+  border: 1px solid rgba(180, 200, 190, 0.22);
+  border-radius: 0.35rem;
   box-shadow:
-    inset 0 -2px 0 0 rgba(0, 0, 0, 0.35),
-    0 16px 32px -18px rgba(0, 0, 0, 0.75),
-    0 2px 8px -3px rgba(0, 0, 0, 0.5);
+    0 14px 30px -18px rgba(0, 0, 0, 0.8),
+    0 2px 6px -2px rgba(0, 0, 0, 0.5);
 }
 
+/* Bandeau de titre plein-bleed (façon écran de menu "Local") : sombre, sobre, une seule
+   ligne de texte fine en majuscules — pas un bloc doré épais. */
 .panel-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
-  padding: 0.5rem 0.9rem;
-  background: linear-gradient(180deg, #f6dc95 0%, #eabd52 45%, #cd9d33 100%);
-  color: #241a06;
+  padding: 0.4rem 0.75rem;
+  background: linear-gradient(180deg, rgba(58, 72, 66, 0.9), rgba(30, 40, 36, 0.95));
+  color: #f2f5f1;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-size: 0.78rem;
-  border-bottom: 2px solid #8a6a1c;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.04em;
+  font-size: 0.72rem;
+  border-bottom: 1px solid rgba(180, 200, 190, 0.18);
 }
 .panel-header-bar--green {
-  background: linear-gradient(180deg, #5c9d75 0%, #3a6b4a 45%, #234c33 100%);
-  color: #f2f5f1;
-  border-bottom-color: #16311f;
+  background: linear-gradient(180deg, rgba(58, 107, 74, 0.85), rgba(28, 60, 40, 0.92));
 }
 .panel-header-bar--dark {
-  background: linear-gradient(180deg, #24382c 0%, #16241b 100%);
-  color: #f6dc95;
-  border-bottom-color: #05100a;
+  background: linear-gradient(180deg, rgba(20, 30, 26, 0.95), rgba(9, 15, 12, 0.97));
+  color: #d8e0d8;
 }
 
-/* Barre de statistique segmentée (façon "LED bar" console de foot rétro) : remplace le
-   dégradé lisse par des blocs discrets qui s'allument selon la valeur. */
+/* Bandeau-onglet façon fiche d'équipe : capsule courte, colorée, posée en haut d'une
+   fiche identité (au lieu du bandeau plein-bleed utilisé pour les menus/tableaux). */
+.panel-header-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.5rem;
+  border-radius: 0.3rem 0.3rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #f2f5f1;
+}
+.panel-header-tab--gold {
+  background: linear-gradient(180deg, #eabd52, #a37822);
+  color: #201705;
+}
+.panel-header-tab--green {
+  background: linear-gradient(180deg, #4a8863, #245038);
+}
+
+/* Étiquette compacte façon "numéro de maillot" ou "code de poste" dans une liste dense. */
+.tag-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  padding: 0 0.3rem;
+  height: 1.1rem;
+  border-radius: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.08);
+  color: #d8e0d8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Barre de statistique segmentée (façon jauge d'édition de joueur) : fine, dense, colorée
+   par palier de valeur (rouge → orange → jaune → vert) plutôt qu'un simple dégradé lisse. */
 .stat-bar-segmented {
   display: grid;
   grid-auto-flow: column;
-  gap: 2px;
+  gap: 1px;
 }
 .stat-bar-segmented__seg {
-  height: 9px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  border-radius: 1px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 0;
 }
 .stat-bar-segmented__seg.is-lit {
   background: var(--seg-color, #eabd52);
-  box-shadow: 0 0 5px 0 var(--seg-color, #eabd52), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-  border-color: rgba(0, 0, 0, 0.25);
 }
 
 .btn-gold {

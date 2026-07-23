@@ -4,6 +4,7 @@ import { overallRating } from '../../engine/types';
 import { useGameStore } from '../../state/store';
 import { ui } from '../../i18n/ui';
 import SegmentedBar from '../ui/SegmentedBar';
+import { statTierColor } from '../ui/statColor';
 
 export default function AttributesPanel({ career }: { career: PlayerState }) {
   const language = useGameStore((s) => s.language);
@@ -17,29 +18,34 @@ export default function AttributesPanel({ career }: { career: PlayerState }) {
     <div className="panel-retro">
       <div className="panel-header-bar">
         <span>{ui(language, 'attributesTitle')}</span>
-        <span className="rounded-sm bg-black/25 px-2 py-0.5 font-display text-sm tabular-nums">
+        <span className="font-display tabular-nums" style={{ color: statTierColor(overall) }}>
           {overall.toFixed(1)} {ui(language, 'attributesOverall')}
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-x-6 gap-y-3 p-4 sm:grid-cols-2">
+      <div className="flex flex-col divide-y divide-white/5 px-3">
         {visibleAttrs.map((key) => {
           const isKey = position.keyAttributes.includes(key);
           const value = career.attributes[key];
+          const color = statTierColor(value);
           return (
-            <div key={key} title={descriptions[key]} className="cursor-help">
-              <div className="flex justify-between text-xs">
-                <span className={isKey ? 'font-semibold text-gold-400' : 'text-ink-300'}>
-                  <span aria-hidden>{ATTRIBUTE_ICONS[key]}</span> {labels[key]}
-                </span>
-                <span className="font-display tabular-nums text-ink-300">{Math.round(value)}</span>
-              </div>
-              <div className="mt-1">
-                <SegmentedBar value={value} color={isKey ? '#eabd52' : '#5c9d75'} />
-              </div>
+            <div key={key} title={descriptions[key]} className="flex cursor-help items-center gap-2 py-1.5 text-xs">
+              <span aria-hidden className="w-4 shrink-0 text-center text-[11px] opacity-70">
+                {ATTRIBUTE_ICONS[key]}
+              </span>
+              <span className={`w-24 shrink-0 truncate sm:w-28 ${isKey ? 'font-semibold text-gold-400' : 'text-ink-300'}`}>
+                {labels[key]}
+              </span>
+              <span className="w-7 shrink-0 text-right font-display tabular-nums" style={{ color }}>
+                {Math.round(value)}
+              </span>
+              <span className="min-w-0 flex-1">
+                <SegmentedBar value={value} segments={30} color={color} />
+              </span>
             </div>
           );
         })}
       </div>
+      <div className="h-2" />
     </div>
   );
 }
