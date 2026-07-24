@@ -1,0 +1,16 @@
+{
+  "name": "destinity-creator",
+  "version": "1.0.0",
+  "description": "Colle un texte, obtiens-en le resume sous forme d'histoire.",
+  "private": true,
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}

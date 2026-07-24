@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Colle -> Histoire</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Colle ton texte, obtiens une histoire</h1>
+      <p class="subtitle">
+        Colle n'importe quel texte copie (article, notes, conversation...) et
+        laisse Claude t'en raconter l'essentiel sous forme d'histoire.
+      </p>
+
+      <textarea
+        id="input"
+        placeholder="Colle ton texte ici..."
+        rows="12"
+      ></textarea>
+
+      <button id="submit">Transformer en histoire</button>
+
+      <div id="status" class="status" hidden></div>
+
+      <section id="result" class="result" hidden>
+        <h2>Ton histoire</h2>
+        <p id="story"></p>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
