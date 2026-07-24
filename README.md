@@ -1,7 +1,18 @@
 # destinity-creator
 
 Colle un texte que tu as copie, et obtiens-en un resume raconte comme une
-histoire, genere par Claude.
+histoire, genere localement par [Ollama](https://ollama.com) (modele
+`mistral` par defaut) — sans passer par une API payante.
+
+## Prerequis
+
+Installe [Ollama](https://ollama.com/download), puis recupere le modele :
+
+```bash
+ollama pull mistral
+```
+
+Assure-toi qu'Ollama tourne (`ollama serve`, ou l'app Ollama en arriere-plan).
 
 ## Installation
 
@@ -10,11 +21,15 @@ npm install
 cp .env.example .env
 ```
 
-Renseigne ta cle dans `.env` :
+`.env` contient (valeurs par defaut, a adapter si besoin) :
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=mistral
 ```
+
+Pour utiliser un autre modele local (llama3.1, qwen2.5, ...), fais
+`ollama pull <modele>` puis change `OLLAMA_MODEL` en consequence.
 
 ## Lancer l'app
 
