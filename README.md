@@ -161,7 +161,9 @@ back.
 - **Broadcast** — run one command across every agent in the current deck.
 - **Groups** — sort agents into decks; membership and names persist.
 - **Command palette** — `Ctrl/Cmd+K`, filters over agents and actions.
-- **Tool detection** — probes the host for ~18 CLIs and reports versions.
+- **Tool detection** — probes the host for ~19 CLIs and reports versions,
+  including the terminal coding agents (Claude Code, Codex, Gemini CLI,
+  Antigravity CLI, Aider).
 - **Credential vault** — API keys stored on the host, injected into agent
   environments, masked back out of their output. See [Keys](#keys).
 - **Log persistence** — every session's output lands in `.destinity/logs/`,

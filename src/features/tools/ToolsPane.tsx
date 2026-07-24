@@ -6,7 +6,7 @@ import { IconRefresh } from '@/components/Icons.tsx'
 
 /** Grouping is presentational only — the runtime probes a flat list. */
 const SECTIONS: { title: string; ids: string[] }[] = [
-  { title: 'Coding agents', ids: ['claude', 'codex', 'gemini', 'aider'] },
+  { title: 'Coding agents', ids: ['claude', 'codex', 'gemini', 'antigravity', 'aider'] },
   { title: 'Models', ids: ['ollama'] },
   { title: 'Runtimes', ids: ['node', 'npm', 'pnpm', 'bun', 'deno', 'python', 'uv', 'cargo', 'go'] },
   { title: 'Infra', ids: ['git', 'docker', 'kubectl', 'rg'] },
