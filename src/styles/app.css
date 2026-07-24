@@ -1,0 +1,967 @@
+@import './tokens.css';
+@import '@xterm/xterm/css/xterm.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--g-0);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--amber-dim);
+  color: var(--ink);
+}
+
+/* Scrollbars: thin, no track. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--g-5) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--g-4);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--g-5);
+  background-clip: padding-box;
+}
+
+/* ── Shell ──────────────────────────────────────────────────────────────── */
+
+.shell {
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr var(--status-h);
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 0 14px;
+  background: var(--g-1);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-right: 16px;
+  border-right: 1px solid var(--line);
+  align-self: stretch;
+  align-items: center;
+}
+
+.brand-mark {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--amber);
+  border-left-width: 4px;
+}
+
+.brand-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.brand-name span {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  align-self: stretch;
+  align-items: stretch;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.tab:hover {
+  color: var(--ink-2);
+}
+
+.tab[aria-selected='true'] {
+  color: var(--ink);
+  border-bottom-color: var(--amber);
+}
+
+.tab-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--g-3);
+  color: var(--ink-2);
+  border-radius: var(--r);
+}
+
+.header-spacer {
+  flex: 1;
+}
+
+.header-meters {
+  display: flex;
+  gap: 14px;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.meter-key {
+  color: var(--ink-3);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.meter-track {
+  width: 44px;
+  height: 4px;
+  background: var(--g-3);
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--ink-3);
+  transition: width 0.6s linear;
+}
+
+.meter-fill.hot {
+  background: var(--amber);
+}
+
+.link-state {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-3);
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+  align-self: stretch;
+  align-items: center;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+}
+
+.dot.open {
+  background: var(--moss);
+}
+.dot.connecting {
+  background: var(--wheat);
+}
+.dot.closed {
+  background: var(--rust);
+}
+
+/* ── Body ───────────────────────────────────────────────────────────────── */
+
+.body {
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  min-height: 0;
+}
+
+.body.no-rail {
+  grid-template-columns: 1fr;
+}
+
+/* ── Rail ───────────────────────────────────────────────────────────────── */
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--g-1);
+  border-right: 1px solid var(--line);
+}
+
+.rail-section {
+  padding: 12px 12px 14px;
+  border-bottom: 1px solid var(--line);
+  min-height: 0;
+}
+
+.rail-section.grow {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.rail-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 9px;
+}
+
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px 6px 7px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+}
+
+.rail-item:hover {
+  background: var(--g-2);
+  color: var(--ink);
+}
+
+.rail-item[aria-current='true'] {
+  background: var(--g-2);
+  border-left-color: var(--amber);
+  color: var(--ink);
+}
+
+.rail-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-item-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.rail-item-x {
+  background: none;
+  border: none;
+  color: var(--ink-4);
+  cursor: pointer;
+  padding: 0 2px;
+  display: flex;
+  opacity: 0;
+}
+
+.rail-item:hover .rail-item-x {
+  opacity: 1;
+}
+
+.rail-item-x:hover {
+  color: var(--rust);
+}
+
+.rail-add {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.rail-empty {
+  font-size: 11px;
+  color: var(--ink-4);
+  padding: 4px 0 2px;
+}
+
+/* ── Controls ───────────────────────────────────────────────────────────── */
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 8px;
+  background: var(--g-0);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  font-size: 12px;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ink-4);
+}
+
+.input:focus {
+  border-color: var(--amber-dim);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: var(--g-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  color: var(--ink-2);
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--g-4);
+  color: var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: var(--amber-wash);
+  border-color: var(--amber-dim);
+  color: var(--amber-bright);
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: rgba(217, 142, 51, 0.18);
+}
+
+.btn.icon {
+  padding: 5px 7px;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+
+.seg button {
+  padding: 4px 9px;
+  background: var(--g-2);
+  border: none;
+  border-right: 1px solid var(--line-strong);
+  color: var(--ink-3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.seg button:last-child {
+  border-right: none;
+}
+
+.seg button:hover {
+  color: var(--ink-2);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--g-4);
+  color: var(--amber-bright);
+}
+
+/* ── Deck ───────────────────────────────────────────────────────────────── */
+
+.deck {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--g-0);
+}
+
+.deck-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+
+.deck-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.deck-heading h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deck-tally {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.deck-tally b {
+  color: var(--amber);
+  font-weight: 600;
+}
+
+.deck-bar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.deck-grid {
+  flex: 1;
+  display: grid;
+  /* Rows split the deck evenly and only start scrolling once a card would be
+     squeezed below a usable terminal height. */
+  grid-auto-rows: minmax(200px, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: 1px solid var(--line);
+  overflow: auto;
+  min-height: 0;
+}
+
+.deck-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.deck-empty-rule {
+  width: 40px;
+  height: 1px;
+  background: var(--amber);
+}
+
+.deck-empty h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.deck-empty p {
+  margin: 0;
+  max-width: 380px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.deck-empty kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  color: var(--ink-2);
+}
+
+/* ── Agent card ─────────────────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  background: var(--g-1);
+  border-left: 2px solid transparent;
+}
+
+.card.exited {
+  background: var(--g-0);
+}
+
+.card:focus-within {
+  border-left-color: var(--amber);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  background: var(--g-2);
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+
+.card-badge {
+  width: 30px;
+  height: 26px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: var(--r);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--tone-slate);
+}
+
+.card-ident {
+  min-width: 0;
+  flex: 1;
+}
+
+.card-name {
+  display: block;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-name-input {
+  width: 100%;
+  padding: 0 2px;
+  background: var(--g-0);
+  border: 1px solid var(--amber-dim);
+  border-radius: var(--r);
+  font-size: 12px;
+  font-weight: 600;
+  outline: none;
+}
+
+.card-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.card-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card-status .dot.live {
+  background: var(--moss);
+}
+.card-status .dot.spawning {
+  background: var(--wheat);
+}
+.card-status .dot.exited {
+  background: var(--rust);
+}
+
+.card-stats {
+  display: flex;
+  align-items: stretch;
+  flex: none;
+}
+
+.card-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 0 9px;
+  border-left: 1px solid var(--line);
+  min-width: 54px;
+}
+
+.card-stat:first-child {
+  border-left: none;
+}
+
+.card-stat-key {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+}
+
+.card-stat-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.card-actions {
+  display: flex;
+  gap: 1px;
+  flex: none;
+}
+
+.card-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--g-3);
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.card-btn:hover {
+  background: var(--g-4);
+  color: var(--ink);
+}
+
+.card-btn[aria-pressed='true'] {
+  color: var(--amber-bright);
+  border-color: var(--amber-dim);
+}
+
+.card-btn.danger:hover {
+  color: var(--rust);
+}
+
+.card-term {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: var(--g-1);
+  padding: 4px 2px 4px 6px;
+}
+
+.card-term > div {
+  position: absolute;
+  inset: 4px 2px 4px 6px;
+}
+
+.card-frozen {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(13, 14, 15, 0.72);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--wheat);
+}
+
+.card-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-top: 1px solid var(--line);
+  background: var(--g-2);
+  flex: none;
+  min-width: 0;
+}
+
+.card-foot-key {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--amber);
+  flex: none;
+}
+
+.card-foot-cmd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Tools tab ──────────────────────────────────────────────────────────── */
+
+.pane {
+  overflow-y: auto;
+  padding: 16px 18px;
+  min-height: 0;
+}
+
+.pane-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pane-head h1 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tool-group-title {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 18px 0 8px;
+}
+
+.tool-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+
+.tool-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  background: var(--g-1);
+}
+
+.tool-row.off {
+  color: var(--ink-4);
+}
+
+.tool-row-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.tool-row-name {
+  font-size: 12px;
+}
+
+.tool-row-ver {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────────── */
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 12px;
+  background: var(--g-1);
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  overflow: hidden;
+}
+
+.status-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status em {
+  font-style: normal;
+  color: var(--ink-2);
+}
+
+/* ── Command palette ────────────────────────────────────────────────────── */
+
+.palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(8, 9, 10, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+}
+
+.palette {
+  width: min(640px, 92vw);
+  background: var(--g-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.palette-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  outline: none;
+}
+
+.palette-input::placeholder {
+  color: var(--ink-4);
+}
+
+.palette-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.palette-hint {
+  padding: 14px;
+  color: var(--ink-4);
+  font-size: 12px;
+}
+
+.palette-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 14px 7px 12px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+}
+
+.palette-row[aria-selected='true'] {
+  background: var(--g-3);
+  border-left-color: var(--amber);
+  color: var(--ink);
+}
+
+.palette-row-label {
+  flex: 1;
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.palette-row-note {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-4);
+}
+
+.palette-foot {
+  display: flex;
+  gap: 14px;
+  padding: 7px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--ink-4);
+}
+
+.palette-foot b {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 42px;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 80vw;
+  padding: 8px 14px;
+  background: var(--g-3);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--amber);
+  border-radius: var(--r);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* xterm sits on the card surface, not on its own black box. */
+.xterm .xterm-viewport {
+  background: transparent !important;
+}
