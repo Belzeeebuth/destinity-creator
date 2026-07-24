@@ -13,6 +13,7 @@ import { SOCKET_PATH } from '@shared/protocol.ts'
 import { AgentManager, MAX_AGENTS, SCROLLBACK_BYTES } from './agents.ts'
 import { detectTools } from './detect.ts'
 import { sampleAgents, sampleHost } from './metrics.ts'
+import { secrets } from './secrets.ts'
 import { WORKSPACE, ensureDirs, loadGroups, saveGroups } from './state.ts'
 
 const PORT = Number(process.env.DESTINITY_PORT || 7331)
@@ -94,6 +95,7 @@ wss.on('connection', (socket) => {
     tools,
     limits: { maxAgents: MAX_AGENTS, scrollbackBytes: SCROLLBACK_BYTES },
     workspace: WORKSPACE,
+    secrets: secrets.list(),
   })
 
   socket.on('message', (raw) => {
@@ -169,12 +171,26 @@ function handle(socket: WebSocket, message: ClientMessage): void {
     case 'groups': {
       groups = message.groups.slice(0, 50)
       saveGroups(groups)
-      agents.reconcileGroups(new Set(groups.map((g) => g.id)))
+      const validIds = new Set(groups.map((g) => g.id))
+      agents.reconcileGroups(validIds)
       broadcast({ t: 'groups', groups })
+      // A deleted group takes its scoped keys with it, otherwise the vault
+      // accumulates credentials nothing can ever reach again.
+      if (secrets.reconcileGroups(validIds)) broadcast({ t: 'secrets', secrets: secrets.list() })
       return
     }
     case 'tools:refresh': {
       void refreshTools()
+      return
+    }
+    case 'secret:set': {
+      secrets.set(message.name, message.value, message.groupId)
+      broadcast({ t: 'secrets', secrets: secrets.list() })
+      return
+    }
+    case 'secret:delete': {
+      secrets.remove(message.name, message.groupId)
+      broadcast({ t: 'secrets', secrets: secrets.list() })
       return
     }
   }

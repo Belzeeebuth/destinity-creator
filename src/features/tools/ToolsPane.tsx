@@ -38,7 +38,7 @@ export function ToolsPane() {
         </button>
       </div>
 
-      {tools.length === 0 && <p className="rail-empty">Probing the host…</p>}
+      {tools.length === 0 && <p className="pane-empty">Probing the host…</p>}
 
       {SECTIONS.map((section) => {
         const rows = section.ids.map((id) => byId.get(id)).filter(Boolean) as DetectedTool[]

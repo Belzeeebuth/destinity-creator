@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 
-export type Tab = 'deck' | 'tools'
+export type Tab = 'deck' | 'tools' | 'keys'
 export type Density = 'auto' | 1 | 2 | 3 | 4
 
 interface UIState {

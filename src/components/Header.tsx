@@ -12,6 +12,7 @@ export function Header() {
 
   const agents = useDeck((s) => s.agents)
   const tools = useDeck((s) => s.tools)
+  const secrets = useDeck((s) => s.secrets)
   const host = useDeck((s) => s.host)
   const link = useDeck((s) => s.link)
 
@@ -55,6 +56,15 @@ export function Header() {
           onClick={() => setTab('tools')}
         >
           Tools <span className="tab-count">{availableTools}</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className="tab"
+          aria-selected={tab === 'keys'}
+          onClick={() => setTab('keys')}
+        >
+          Keys <span className="tab-count">{secrets.length}</span>
         </button>
       </nav>
 

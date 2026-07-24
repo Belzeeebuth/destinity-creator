@@ -89,3 +89,16 @@ export const IconTool = (p: IconProps) => (
     <path d="M10.2 2.4a3.4 3.4 0 0 0-4 4.4L2.6 10.4l2 2 3.6-3.6a3.4 3.4 0 0 0 4.4-4l-2 2-1.6-.4-.4-1.6z" />
   </Svg>
 )
+
+export const IconKey = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="5.4" cy="5.4" r="2.9" />
+    <path d="M7.5 7.5L13 13M10.4 10.4l-1.5 1.5M12 12l-1.2 1.2" />
+  </Svg>
+)
+
+export const IconTrash = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5 4.5h9M6.5 4.5V3h3v1.5M5 4.5l.5 8h5l.5-8" />
+  </Svg>
+)

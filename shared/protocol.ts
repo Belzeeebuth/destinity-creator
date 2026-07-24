@@ -20,6 +20,12 @@ export interface AgentSnapshot {
   cols: number
   rows: number
   createdAt: number
+  /**
+   * When the current process started. Unlike `createdAt` this moves on every
+   * restart, which is what tells the Keys pane whether an agent is still
+   * running with a stale copy of the vault.
+   */
+  spawnedAt: number
   exitedAt: number | null
   exitCode: number | null
   /** Last command line the operator submitted into this agent. */
@@ -70,6 +76,22 @@ export interface RuntimeLimits {
   scrollbackBytes: number
 }
 
+/**
+ * A stored credential as the browser is allowed to see it — never the value.
+ *
+ * `tail` is the last four characters, which is enough to tell two keys apart
+ * without shipping anything usable. Everything else about a secret stays on
+ * the server; there is no message that returns a full value.
+ */
+export interface SecretMeta {
+  name: string
+  /** `null` = applies to every agent; otherwise scoped to one group. */
+  groupId: string | null
+  tail: string
+  length: number
+  updatedAt: number
+}
+
 export type ClientMessage =
   | { t: 'spawn'; reqId: string; groupId: string | null; command?: string; cwd?: string; cols: number; rows: number }
   | { t: 'attach'; id: string; cols: number; rows: number }
@@ -84,6 +106,8 @@ export type ClientMessage =
   | { t: 'run'; ids: string[]; command: string }
   | { t: 'groups'; groups: GroupRecord[] }
   | { t: 'tools:refresh' }
+  | { t: 'secret:set'; reqId: string; name: string; value: string; groupId: string | null }
+  | { t: 'secret:delete'; name: string; groupId: string | null }
 
 export type ServerMessage =
   | {
@@ -94,6 +118,7 @@ export type ServerMessage =
       tools: DetectedTool[]
       limits: RuntimeLimits
       workspace: string
+      secrets: SecretMeta[]
     }
   | { t: 'agent'; agent: AgentSnapshot }
   | { t: 'gone'; id: string }
@@ -102,6 +127,7 @@ export type ServerMessage =
   | { t: 'samples'; host: HostSample; agents: AgentSample[] }
   | { t: 'tools'; tools: DetectedTool[] }
   | { t: 'groups'; groups: GroupRecord[] }
+  | { t: 'secrets'; secrets: SecretMeta[] }
   | { t: 'error'; reqId?: string; message: string }
 
 export const SOCKET_PATH = '/agent-socket'

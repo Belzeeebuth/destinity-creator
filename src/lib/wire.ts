@@ -13,6 +13,7 @@ import {
   applyGroups,
   applyReady,
   applySamples,
+  applySecrets,
   applyTools,
   notify,
   setLink,
@@ -82,6 +83,9 @@ export function startWire(): void {
         return
       case 'tools':
         applyTools(message.tools)
+        return
+      case 'secrets':
+        applySecrets(message.secrets)
         return
       case 'error':
         notify(message.message)

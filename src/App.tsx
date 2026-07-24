@@ -5,6 +5,7 @@ import { Toast } from '@/components/Toast.tsx'
 import { AgentDeck } from '@/features/deck/AgentDeck.tsx'
 import { GroupRail } from '@/features/groups/GroupRail.tsx'
 import { CommandPalette } from '@/features/palette/CommandPalette.tsx'
+import { SecretsPane } from '@/features/secrets/SecretsPane.tsx'
 import { ToolsPane } from '@/features/tools/ToolsPane.tsx'
 import { spawnAgent, useDeck } from '@/store/deck.ts'
 import { useUI } from '@/store/ui.ts'
@@ -20,7 +21,9 @@ export function App() {
       <Header />
       <div className={`body${railOpen ? '' : ' no-rail'}`}>
         {railOpen && <GroupRail />}
-        {tab === 'deck' ? <AgentDeck /> : <ToolsPane />}
+        {tab === 'deck' && <AgentDeck />}
+        {tab === 'tools' && <ToolsPane />}
+        {tab === 'keys' && <SecretsPane />}
       </div>
       <StatusBar />
       <CommandPalette />

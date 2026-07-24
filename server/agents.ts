@@ -5,20 +5,31 @@ import * as pty from 'node-pty'
 import { resolveKind, SHELL_KIND } from '@shared/kinds.ts'
 import type { AgentSnapshot } from '@shared/protocol.ts'
 import { logPathFor, ensureDirs, WORKSPACE } from './state.ts'
+import { Redactor } from './redact.ts'
+import { secrets } from './secrets.ts'
 
 export const MAX_AGENTS = Number(process.env.DESTINITY_MAX_AGENTS || 12)
 export const SCROLLBACK_BYTES = Number(process.env.DESTINITY_SCROLLBACK || 256 * 1024)
 
+/**
+ * How long a partially-matched secret tail may be withheld before it is
+ * released. Chunks that split a value arrive microseconds apart, so this only
+ * ever fires when the match was a coincidence and no more output is coming.
+ */
+const REDACT_FLUSH_MS = 60
+
 interface Agent {
   snap: AgentSnapshot
   proc: pty.IPty | null
-  /** Ring buffer of raw output, replayed when a browser attaches. */
+  /** Ring buffer of masked output, replayed when a browser attaches. */
   scrollback: string[]
   scrollbackBytes: number
   /** Accumulated keystrokes since the last Enter, used to auto-label. */
   inputLine: string
   inEscape: boolean
   log: fs.WriteStream | null
+  redactor: Redactor
+  flushTimer: NodeJS.Timeout | null
 }
 
 export interface SpawnOptions {
@@ -72,6 +83,7 @@ export class AgentManager extends EventEmitter<Events> {
         cols: options.cols,
         rows: options.rows,
         createdAt: Date.now(),
+        spawnedAt: 0,
         exitedAt: null,
         exitCode: null,
         lastCommand: '',
@@ -84,6 +96,8 @@ export class AgentManager extends EventEmitter<Events> {
       inputLine: '',
       inEscape: false,
       log: openLog(id),
+      redactor: new Redactor(),
+      flushTimer: null,
     }
 
     this.agents.set(id, agent)
@@ -103,6 +117,11 @@ export class AgentManager extends EventEmitter<Events> {
         cwd: snap.cwd,
         env: {
           ...(process.env as Record<string, string>),
+          // Vault keys win over anything the shell that started the runtime
+          // happened to export, so the panel is the single source of truth.
+          ...secrets.envFor(snap.groupId),
+          // Runtime-owned last: the vault refuses these names, and this makes
+          // that guarantee structural rather than a matter of validation.
           TERM: 'xterm-256color',
           COLORTERM: 'truecolor',
           DESTINITY_AGENT: snap.id,
@@ -120,6 +139,9 @@ export class AgentManager extends EventEmitter<Events> {
     agent.proc = proc
     snap.pid = proc.pid
     snap.status = 'live'
+    // Stamped after the spawn succeeds, so the env it captured is the vault as
+    // of this moment — that is exactly what staleness is measured against.
+    snap.spawnedAt = Date.now()
 
     proc.onData((chunk) => {
       snap.bytesOut += chunk.length
@@ -205,6 +227,9 @@ export class AgentManager extends EventEmitter<Events> {
     agent.scrollback = []
     agent.scrollbackBytes = 0
     agent.inputLine = ''
+    // Drop any withheld tail with the buffer it belonged to, and pick up the
+    // current vault — a restart is how an edited key reaches a running agent.
+    this.clearFlush(agent)
     agent.log?.write(`\n--- restart @ ${new Date().toISOString()} ---\n`)
 
     this.start(agent)
@@ -225,6 +250,7 @@ export class AgentManager extends EventEmitter<Events> {
       /* already gone */
     }
 
+    this.clearFlush(agent)
     agent.log?.end()
     this.agents.delete(id)
     this.emit('gone', id)
@@ -266,7 +292,18 @@ export class AgentManager extends EventEmitter<Events> {
     return { data: agent.scrollback.join(''), epoch: agent.snap.epoch }
   }
 
+  /**
+   * The single funnel for everything an agent emits. Masking happens here so
+   * the scrollback, the log on disk and every connected browser are all fed
+   * from the same already-redacted text — there is no path around it.
+   */
   private push(agent: Agent, chunk: string): void {
+    const safe = agent.redactor.push(chunk, secrets.values())
+    if (safe) this.deliver(agent, safe)
+    this.scheduleFlush(agent)
+  }
+
+  private deliver(agent: Agent, chunk: string): void {
     agent.scrollback.push(chunk)
     agent.scrollbackBytes += chunk.length
     while (agent.scrollbackBytes > SCROLLBACK_BYTES && agent.scrollback.length > 1) {
@@ -274,6 +311,26 @@ export class AgentManager extends EventEmitter<Events> {
     }
     agent.log?.write(chunk)
     this.emit('data', agent.snap.id, agent.snap.epoch, chunk)
+  }
+
+  private scheduleFlush(agent: Agent): void {
+    if (agent.flushTimer) {
+      clearTimeout(agent.flushTimer)
+      agent.flushTimer = null
+    }
+    if (!agent.redactor.pending) return
+    agent.flushTimer = setTimeout(() => {
+      agent.flushTimer = null
+      const rest = agent.redactor.flush()
+      if (rest) this.deliver(agent, rest)
+    }, REDACT_FLUSH_MS)
+    agent.flushTimer.unref()
+  }
+
+  private clearFlush(agent: Agent): void {
+    if (agent.flushTimer) clearTimeout(agent.flushTimer)
+    agent.flushTimer = null
+    agent.redactor = new Redactor()
   }
 
   /**

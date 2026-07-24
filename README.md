@@ -41,8 +41,9 @@ they have different lib/globals, so they get different tsconfigs.
 | `DESTINITY_SCROLLBACK` | `262144` | Per-agent replay buffer, in bytes |
 
 The default bind is loopback-only, and deliberately so — the socket hands out
-shell access to anyone who can reach it. There is no authentication layer.
-Don't move it off `127.0.0.1` without putting one in front.
+shell access, and once you store keys it fronts those too. There is no
+authentication layer. Don't move it off `127.0.0.1` without putting one in
+front.
 
 ## Architecture
 
@@ -55,7 +56,9 @@ browser                          node runtime
 │                        │       │  /proc + ps metrics sampler  │
 │ lib/wire   (pub/sub) ──┼──────▶│  tool detection              │
 │ xterm.js per card      │       │  state.json + per-agent logs │
-└────────────────────────┘       └──────────────────────────────┘
+└────────────────────────┘       │  secret vault ──┬─▶ PTY env  │
+                                 │                 └─▶ redactor │
+                                 └──────────────────────────────┘
 ```
 
 **Sessions live on the server.** The browser is a viewport, not an owner. Close
@@ -85,8 +88,10 @@ output never is, since prompts and TUIs redraw constantly.
 
 | Path | What lives there |
 | --- | --- |
-| `shared/` | The wire contract and the kind table — imported by both sides, so the protocol cannot drift |
+| `shared/` | The wire contract, the kind table and the key catalogue — imported by both sides, so the protocol cannot drift |
 | `server/agents.ts` | PTY lifecycle, scrollback, labelling, groups |
+| `server/secrets.ts` | The credential vault |
+| `server/redact.ts` | Streaming mask that keeps stored values out of output |
 | `server/metrics.ts` | Per-agent CPU/RSS aggregated across the process group |
 | `server/detect.ts` | Probes the host for installed tools |
 | `server/state.ts` | Group + log persistence under `.destinity/` |
@@ -106,6 +111,44 @@ Intent-carrying messages (`spawn`, `groups`, `tools:refresh`) are queued and
 replayed once the socket is live. Keystrokes are deliberately *not* queued:
 replaying input into a shell that has moved on is worse than dropping it.
 
+## Keys
+
+The Keys tab stores API credentials and injects them into every agent's
+environment at spawn, so `claude`, `codex`, `gemini` and `aider` authenticate
+without you exporting anything by hand. Keys are either global or scoped to one
+group, where the group's copy shadows the global one.
+
+Environment is fixed at spawn, so a key you change does not reach an already
+running agent. The pane detects this — it compares each key's timestamp against
+each agent's `spawnedAt` — and offers to restart the agents that are behind.
+
+Three properties hold, and they are the reason the feature is shaped this way:
+
+**Values never travel back to the browser.** The wire protocol has no message
+that returns one. The page receives name, length, last four characters and a
+timestamp; that is enough to manage a key and useless for using one.
+
+**Values are masked out of output.** `server/redact.ts` scans every chunk an
+agent emits before it reaches the scrollback, the log on disk or any browser.
+Because output arrives in arbitrary chunks and a key can straddle two of them,
+the masker holds back the longest tail that could still be the start of a
+secret and prepends it to the next chunk — the hold only triggers on a real
+partial match, so ordinary output is not delayed. This catches the realistic
+accident: `echo $ANTHROPIC_API_KEY`, a config dump, a stack trace carrying the
+environment. It cannot catch a value the process transforms before printing,
+and does not claim to.
+
+**Storage is honest about what it is.** `.destinity/secrets.json`, mode 0600,
+git-ignored, written via a temp file and renamed so it is never half-written.
+That is file permissions, not encryption — encrypting a file whose key would
+have to sit beside it buys nothing, so the code does not pretend otherwise.
+
+`PATH`, `HOME`, `SHELL`, `TERM` and `DESTINITY_*` are refused. That is a
+foot-gun guard rather than a security boundary — an agent is a shell, so anyone
+who can set a key can already export whatever they like — but clobbering `PATH`
+from a settings panel breaks every agent at once in a way that is hard to trace
+back.
+
 ## Features
 
 - **Adaptive grid** — column count follows the agent count, or pin it 1–4.
@@ -119,7 +162,10 @@ replaying input into a shell that has moved on is worse than dropping it.
 - **Groups** — sort agents into decks; membership and names persist.
 - **Command palette** — `Ctrl/Cmd+K`, filters over agents and actions.
 - **Tool detection** — probes the host for ~18 CLIs and reports versions.
-- **Log persistence** — every session's raw output lands in `.destinity/logs/`.
+- **Credential vault** — API keys stored on the host, injected into agent
+  environments, masked back out of their output. See [Keys](#keys).
+- **Log persistence** — every session's output lands in `.destinity/logs/`,
+  after redaction.
 
 ### Keyboard
 

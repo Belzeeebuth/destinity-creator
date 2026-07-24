@@ -318,10 +318,16 @@ textarea {
   margin-top: 8px;
 }
 
-.rail-empty {
+.rail-empty,
+.pane-empty {
   font-size: 11px;
   color: var(--ink-4);
   padding: 4px 0 2px;
+}
+
+.pane-empty {
+  max-width: 68ch;
+  line-height: 1.55;
 }
 
 /* ── Controls ───────────────────────────────────────────────────────────── */
@@ -811,6 +817,160 @@ textarea {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ── Keys ───────────────────────────────────────────────────────────────── */
+
+.pane-lede {
+  max-width: 68ch;
+  margin: -6px 0 14px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.pane-foot {
+  max-width: 68ch;
+  margin: 22px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink-4);
+}
+
+.pane-foot code {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+/* Amber wash rather than a coloured border: the accent has to carry meaning
+   without the page acquiring a second competing surface treatment. */
+.notice-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-bottom: 14px;
+  background: var(--amber-wash);
+  border: 1px solid var(--amber-dim);
+  border-radius: var(--r);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.notice-bar b {
+  color: var(--amber-bright);
+}
+
+.notice-bar span {
+  flex: 1;
+}
+
+/* Keys are few and their rows are wordy, so this column holds its content
+   instead of tracking the viewport the way the tool grid does. */
+.secret-list {
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+}
+
+.notice-bar,
+.secret-form,
+.secret-list,
+.secret-suggest {
+  max-width: 960px;
+}
+
+.secret-form {
+  margin-bottom: 4px;
+}
+
+.secret-form-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.secret-form-row .input {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.secret-form-row .input:first-child {
+  flex: 0 0 15.5rem;
+}
+
+.input.select {
+  flex: 0 0 11rem;
+  font-family: var(--font-ui);
+  color: var(--ink-2);
+  cursor: pointer;
+  /* The native arrow is the one control the platform still paints; keeping it
+     is cheaper than reproducing it and it stays legible in both themes. */
+  appearance: auto;
+}
+
+.secret-problem {
+  margin: 7px 0 0;
+  font-size: 11px;
+  color: var(--rust);
+}
+
+.secret-suggest {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 10px;
+}
+
+.secret-suggest-key {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-right: 3px;
+}
+
+.chip {
+  padding: 3px 7px;
+  background: var(--g-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  color: var(--ink-3);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+}
+
+.chip:hover {
+  background: var(--g-3);
+  color: var(--ink);
+  border-color: var(--amber-dim);
+}
+
+.tag {
+  margin-left: 7px;
+  padding: 1px 5px;
+  background: var(--g-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  vertical-align: 1px;
+}
+
+.btn.danger {
+  padding: 5px 7px;
+  color: var(--ink-3);
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: var(--g-4);
+  border-color: var(--rust);
+  color: var(--rust);
 }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */
