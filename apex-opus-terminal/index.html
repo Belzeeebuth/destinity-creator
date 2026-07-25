@@ -16,6 +16,7 @@
   --acc:#f0a92e; --acc-d:#3a2a08;
   --up:#16c784; --dn:#ea3943;
   --mono:ui-monospace,'SFMono-Regular',Menlo,Consolas,'DejaVu Sans Mono',monospace;
+  --fa:.34;                 /* opacité du clignotement de prix */
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -101,8 +102,8 @@ body{
 .wl .px{text-align:right;font-size:11.5px;font-weight:600;padding-right:4px}
 .wl .ch{text-align:right;font-size:9.5px;width:52px}
 .wl canvas{display:block;width:44px;height:20px}
-@keyframes fu{0%{background:rgba(22,199,132,.34)}100%{background:transparent}}
-@keyframes fd{0%{background:rgba(234,57,67,.34)}100%{background:transparent}}
+@keyframes fu{0%{background:rgba(22,199,132,var(--fa))}100%{background:transparent}}
+@keyframes fd{0%{background:rgba(234,57,67,var(--fa))}100%{background:transparent}}
 .fu{animation:fu .2s ease-out}.fd{animation:fd .2s ease-out}
 
 /* saisie d'ordre */
@@ -192,15 +193,17 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
 #right{grid-area:right;display:flex;flex-direction:column;gap:1px;background:var(--bd);min-height:0}
 #pBook{flex:0 0 auto}
 #pTape{flex:1 1 auto;min-height:90px}
-.bk{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}
-.bk td{padding:1.5px 7px;position:relative;white-space:nowrap}
-.bk .dep{position:absolute;top:1px;bottom:1px;right:0;z-index:0;opacity:.2}
-.bk .ask .dep{background:var(--dn)}.bk .bid .dep{background:var(--up)}
-.bk span{position:relative;z-index:1}
-.bk .p{font-weight:600;width:74px}
-.bk .ask .p{color:var(--dn)}.bk .bid .p{color:var(--up)}
-.bk .q{text-align:right;color:var(--tx2)}
-.bk .c{text-align:right;color:var(--tx3);font-size:9px;width:62px}
+/* carnet en lignes flex : la barre de profondeur traverse toute la ligne */
+.bkl{display:flex;flex-direction:column}
+.bkr{position:relative;display:flex;align-items:center;gap:6px;
+     padding:1.5px 7px;font-size:10px;white-space:nowrap}
+.bkr .dep{position:absolute;top:0;bottom:0;left:0;z-index:0;opacity:.19}
+.bkr.ask .dep{background:var(--dn)}.bkr.bid .dep{background:var(--up)}
+.bkr>span{position:relative;z-index:1}
+.bkr .p{font-weight:600;flex:0 0 62px}
+.bkr.ask .p{color:var(--dn)}.bkr.bid .p{color:var(--up)}
+.bkr .q{flex:1 1 auto;text-align:right;color:var(--tx2)}
+.bkr .c{flex:0 0 56px;text-align:right;color:var(--tx3);font-size:9px}
 .bkmid{display:flex;align-items:center;gap:7px;padding:3px 7px;background:#0f1620;
   border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
 .bkmid .sprd{font-size:9px;color:var(--tx3);letter-spacing:.05em}
@@ -235,6 +238,143 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
 
 #help{position:absolute;top:40px;left:7px;font-size:8.5px;color:#39454f;letter-spacing:.08em;z-index:5;pointer-events:none}
 #help b{color:#59677a;font-weight:600}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADAPTATIF
+   ═══════════════════════════════════════════════════════════════════ */
+#tabs{display:none}
+.mob{display:none!important}
+
+/* ── écrans intermédiaires : on resserre les colonnes latérales ───── */
+@media (max-width:1280px){
+  #app{grid-template-columns:212px minmax(0,1fr) 262px;grid-template-rows:36px minmax(0,1fr) 178px 22px}
+  .hcell{padding:0 8px}
+  .hcell .v{font-size:11px}
+  .hcell.big .v{font-size:13px}
+  .brand{padding:0 9px}
+  .brand h1{font-size:11px;letter-spacing:.14em}
+  .wl canvas{width:34px}
+  .bkr .c{display:none}
+  #pAlert{flex:0 0 118px}
+}
+@media (max-width:1060px){
+  #app{grid-template-columns:190px minmax(0,1fr) 226px}
+  .brand .v,#lat{display:none}
+  .ctb .ohlc{gap:6px;font-size:9px}
+}
+
+/* ── mobile / tablette portrait : un panneau à la fois ───────────── */
+@media (max-width:820px){
+  body{font-size:12px}
+  #app{
+    display:flex;flex-direction:column;gap:1px;
+    height:100vh;height:100dvh;
+    grid-template-columns:none;grid-template-rows:none;grid-template-areas:none;
+  }
+  /* les conteneurs de colonnes s'effacent : chaque panneau devient direct */
+  #left,#right,#bottom{display:contents}
+  .pane{display:none}
+  #app[data-view="graph"]   #chart,
+  #app[data-view="suivi"]   #pWatch,
+  #app[data-view="suivi"]   #pStats,
+  #app[data-view="carnet"]  #pBook,
+  #app[data-view="carnet"]  #pTape,
+  #app[data-view="pos"]     #pPos,
+  #app[data-view="pos"]     #pEq,
+  #app[data-view="alertes"] #pAlert{display:flex;flex:1 1 auto;min-height:0}
+  #app[data-view="carnet"]  #pBook{flex:0 0 auto}   /* la bande T&V prend le reste */
+  #app[data-view="pos"]     #pPos{flex:1 1 0}
+  #app[data-view="pos"]     #pEq{flex:1.15 1 0}
+  #app[data-view="suivi"]   #pWatch{flex:0 0 auto}
+
+  /* en-tête : défilement horizontal, battement épinglé à droite */
+  #hdr{flex:0 0 auto;height:auto;min-height:36px;overflow-x:auto;overflow-y:hidden;
+       scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #hdr::-webkit-scrollbar{display:none}
+  .brand{padding:0 8px;flex:0 0 auto}
+  .brand h1 .w3,.brand .v,#lat,#help{display:none}
+  .brand h1{font-size:11.5px;letter-spacing:.12em}
+  .hcell{flex:0 0 auto;padding:0 9px}
+  .grow{flex:0 0 auto}
+  #hb{position:sticky;right:0;background:#0f1620;border-left:1px solid var(--bd);padding:0 9px;flex:0 0 auto}
+  #hbRate,#hb .hbTxt{display:none}      /* on ne garde que le point de battement */
+
+  /* barre d'onglets */
+  #tabs{display:flex;flex:0 0 auto;background:var(--bg2);overflow-x:auto;
+        scrollbar-width:none;border-bottom:1px solid var(--bd)}
+  #tabs::-webkit-scrollbar{display:none}
+  #tabs button{flex:1 0 auto;min-width:60px;min-height:34px;background:transparent;border:none;
+    border-right:1px solid var(--bd);color:var(--tx3);font:inherit;font-size:10px;
+    letter-spacing:.11em;padding:0 11px;cursor:pointer}
+  #tabs button[aria-selected="true"]{color:var(--acc);background:#151d28;box-shadow:inset 0 -2px 0 var(--acc)}
+
+  /* graphique : barre d'outils compacte sur deux lignes, boutons tactiles */
+  .ctb{height:auto;flex:0 0 auto;flex-wrap:wrap;row-gap:2px;padding:2px 5px;gap:3px}
+  .ctb .g{border-right:none;padding-right:3px;margin-right:0}
+  .mob{display:flex!important}
+  .tgl{padding:4px 6px;font-size:9px;letter-spacing:.05em}
+  #panL,#panR,#zIn,#zOut{padding:4px 9px;font-size:11px;line-height:1}
+  .ctb .ohlc{margin-left:0;width:100%;gap:7px;font-size:9px;overflow-x:auto;
+             scrollbar-width:none;white-space:nowrap}
+  .ctb .ohlc::-webkit-scrollbar{display:none}
+  .ctb .ohlc .x2{display:none}          /* dispo dans l'onglet SUIVI */
+  #cwrap{touch-action:none}
+  #toasts{right:6px;left:auto;max-width:74%}
+
+  /* saisie d'ordre : barre permanente en bas, accessible depuis tout onglet */
+  #pOrder{display:flex!important;flex:0 0 auto;order:98}
+  #pOrder .ph,#pOrder .qbtns,#pOrder .mini,#lastFill{display:none}
+  #pOrder .oe{flex-direction:row;align-items:stretch;padding:6px;gap:6px}
+  #pOrder .row{flex:0 0 96px}
+  #pOrder label{display:none}
+  #pOrder .inp{font-size:15px;padding:7px 8px}
+  #pOrder .trd{flex:1}
+  .tb{padding:7px 4px;min-height:44px}
+  .tb .k{display:none}
+  .tb .l{font-size:10px}
+  .tb .p{font-size:14px}
+
+  #news{order:99;flex:0 0 22px}
+  .nitem{font-size:11px}
+
+  /* positions : on masque le notionnel pour que P&L % et LIQ restent visibles
+     sans défilement horizontal (le notionnel reste lisible dans STATISTIQUES) */
+  .tbl{min-width:0;font-size:9.5px}
+  .tbl th,.tbl td{padding:5px}
+  .tbl th:nth-child(7),.tbl td:nth-child(7){display:none}
+  .flat{padding:3px 5px;font-size:8.5px}
+  /* cellules plus grandes au doigt : le clignotement doit rester discret */
+  :root{--fa:.15}
+  .wl canvas{width:52px;height:22px}
+  .wl td{padding:6px 8px}
+  .wl .sy{font-size:12.5px}
+  .wl .px{font-size:13px}
+  .kv div{padding:5px 8px}
+  .kv .v{font-size:11.5px}
+  .bkr{padding:3.5px 8px}
+  .ts td{padding:3.5px 8px}
+  .arow{padding:7px 8px;font-size:11px}
+  .arow .x{padding:0 7px;font-size:13px}
+  .qb,.hbtn{min-height:30px}
+  #pAlert .oe{flex:0 0 auto;padding:7px}
+  #pAlert .inp{font-size:14px;padding:7px 8px}
+  #alAdd{flex:0 0 42px}
+}
+
+/* ── très petits écrans ──────────────────────────────────────────── */
+@media (max-width:400px){
+  #tabs button{min-width:52px;font-size:9.5px;padding:0 7px;letter-spacing:.06em}
+  .hcell{padding:0 7px}
+  #pOrder .row{flex:0 0 82px}
+  .brand h1{display:none}               /* on ne garde que la barre d'accent */
+  .brand{padding:0 6px}
+}
+
+/* ── mouvement réduit ────────────────────────────────────────────── */
+@media (prefers-reduced-motion:reduce){
+  .fu,.fd,.toast,.ts tr.nw{animation:none}
+  #hbDot{transition:none}
+}
 </style>
 </head>
 <body>
@@ -244,7 +384,7 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
   <div id="hdr">
     <div class="brand">
       <div class="mk"></div>
-      <h1>APEX <i>OPUS</i> TERMINAL</h1>
+      <h1>APEX <i>OPUS</i><span class="w3"> TERMINAL</span></h1>
       <span class="v">v4.2</span>
     </div>
     <div class="hcell big"><span class="k">Instrument</span><span class="v" id="hSym">—</span></div>
@@ -270,6 +410,15 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
       </div>
     </div>
   </div>
+
+  <!-- ══ ONGLETS (mobile uniquement) ══ -->
+  <nav id="tabs" role="tablist" aria-label="Panneaux du terminal">
+    <button role="tab" data-view="graph"   aria-selected="true">GRAPH</button>
+    <button role="tab" data-view="suivi"   aria-selected="false">SUIVI</button>
+    <button role="tab" data-view="carnet"  aria-selected="false">CARNET</button>
+    <button role="tab" data-view="pos"     aria-selected="false">POS</button>
+    <button role="tab" data-view="alertes" aria-selected="false">ALERTES</button>
+  </nav>
 
   <!-- ══ COLONNE GAUCHE ══ -->
   <div id="left">
@@ -327,6 +476,12 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
         <button class="tgl ma3" data-ma="50">MM50</button>
       </div>
       <div class="g"><button class="tgl on" id="tglVol">VOLUME</button><button class="tgl on" id="tglGrid">GRILLE</button></div>
+      <div class="g mob">
+        <button class="tgl" id="panL" aria-label="Reculer dans l'historique">‹</button>
+        <button class="tgl" id="zOut" aria-label="Dézoomer">−</button>
+        <button class="tgl" id="zIn"  aria-label="Zoomer">+</button>
+        <button class="tgl" id="panR" aria-label="Avancer vers le dernier prix">›</button>
+      </div>
       <div class="ohlc" id="ohlc"></div>
     </div>
     <div id="cwrap">
@@ -338,13 +493,13 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
 
   <!-- ══ BAS ══ -->
   <div id="bottom">
-    <div class="pane">
+    <div class="pane" id="pPos">
       <div class="ph"><b>POSITIONS</b><span class="sp"><span id="posN">0</span> LIGNES · EXP. NETTE <span id="posExp">0</span></span></div>
       <div class="pb"><table class="tbl">
         <thead><tr><th>Sym</th><th>Qté</th><th>PRU</th><th>Dernier</th><th>P&amp;L $</th><th>P&amp;L %</th><th>Notionnel</th><th></th></tr></thead>
         <tbody id="posBody"></tbody></table></div>
     </div>
-    <div class="pane">
+    <div class="pane" id="pEq">
       <div class="ph"><b>COURBE D'ÉQUITÉ</b><span class="sp" id="eqInfo">—</span></div>
       <div class="eqstat">
         <div><div class="k">Équité</div><div class="v" id="eqV">—</div></div>
@@ -358,13 +513,13 @@ select.inp{text-align:left;font-size:10.5px;cursor:pointer}
   <div id="right">
     <div class="pane" id="pBook">
       <div class="ph"><b>CARNET D'ORDRES</b><span class="sp" id="bkSym">—</span></div>
-      <table class="bk"><tbody id="askBody"></tbody></table>
+      <div class="bkl" id="askBody"></div>
       <div class="bkmid">
         <span class="sprd">SPREAD <b id="bkSpread" style="color:var(--tx)">—</b></span>
         <span class="sprd">µ <b id="bkMicro" style="color:var(--tx)">—</b></span>
         <span class="mid" id="bkMid">—</span>
       </div>
-      <table class="bk"><tbody id="bidBody"></tbody></table>
+      <div class="bkl" id="bidBody"></div>
       <div class="imb">
         <div class="lbl"><span>DÉSÉQUILIBRE ACHAT</span><span id="imbTxt">—</span></div>
         <div class="imbar"><i id="imbBar" style="width:50%"></i></div>
@@ -445,6 +600,16 @@ function subVol(t){                         // sigma par pas, en fraction
   const dtMin = 1/(252*MIN_PER_SESSION);
   return t.vol*VOL_SCALE*Math.sqrt(dtMin);
 }
+/* Tirage d'un nouveau régime, utilisé à l'identique par l'historique et par le
+   moteur temps réel : les deux doivent rester statistiquement cohérents, sinon
+   l'historique peut passer une séance entière en forte volatilité.
+   Les phases volatiles sont brèves et minoritaires (~10 % du temps). */
+function rollRegime(t){
+  const goVol = (t.rTarget>1.3) ? Math.random()<0.25 : Math.random()<0.35;
+  t.rTarget = goVol ? rnd(1.7,2.4) : rnd(0.5,0.85);
+  t.regime  = goVol ? 'volatil' : 'calme';
+  t.rTimer  = goVol ? rnd(12,45) : rnd(45,180);
+}
 function initUniverse(){
   UNIV.forEach(u=>{
     const t = M[u.sym] = {
@@ -452,7 +617,7 @@ function initUniverse(){
       vol:u.vol, drift:u.drift, adv:u.adv, beta:u.beta,
       regime:'calme', rMult:0.7, rTarget:0.7, rTimer:rnd(30,140),
       c1:[],                                  // chandelles 1 min
-      spark:[], prevClose:u.px,
+      prevClose:u.px,
       bids:[], asks:[], tape:[], shock:null, lastDir:1,
       aggCache:{}
     };
@@ -460,8 +625,8 @@ function initUniverse(){
     let p = u.px;
     const sv = subVol(t)/Math.sqrt(24);
     for(let i=START_MIN-BACKFILL;i<START_MIN;i++){
-      if(Math.random()<0.004) t.rTarget = t.rTarget>1.3?0.65:2.3;
-      t.rMult += (t.rTarget-t.rMult)*0.05;
+      if((t.rTimer -= 1) <= 0) rollRegime(t);
+      t.rMult += (t.rTarget-t.rMult)*0.35;
       const o=p; let h=p,l=p;
       for(let k=0;k<24;k++){
         const mu = (t.drift/(252*MIN_PER_SESSION) - KAPPA*Math.log(p/t.anchor))/24;
@@ -475,7 +640,6 @@ function initUniverse(){
     // clôture de la veille = dernière chandelle avant l'ouverture (t = -1)
     const pc = t.c1[BACKFILL - START_MIN - 1];
     t.prevClose = pc ? pc.c : u.px;
-    t.spark = t.c1.slice(-64).map(c=>c.c);
     // chandelle en cours
     t.c1.push({t:START_MIN,o:p,h:p,l:p,c:p,v:0});
     buildBook(t);
@@ -526,12 +690,7 @@ function stepMarket(dtMin){
     const t = M[u.sym];
     // régimes de volatilité
     t.rTimer -= dtMin;
-    if(t.rTimer<=0){
-      const goVol = t.rTarget<1.3 ? Math.random()<0.42 : Math.random()<0.72;
-      t.rTarget = goVol ? rnd(1.9,3.1) : rnd(0.5,0.85);
-      t.regime  = t.rTarget>1.3 ? 'volatil' : 'calme';
-      t.rTimer  = t.rTarget>1.3 ? rnd(12,45) : rnd(40,170);
-    }
+    if(t.rTimer<=0) rollRegime(t);
     t.rMult += (t.rTarget - t.rMult) * clamp(dtMin*0.35,0,1);
 
     // choc d'actualité (dérive transitoire)
@@ -891,11 +1050,15 @@ function niceStep(range, target){
   const m = c<=1?1 : c<=2?2 : c<=2.5?2.5 : c<=5?5 : 10;
   return m*p;
 }
-const PAD_R = 66, PAD_B = 17;
+let PAD_R = 66;                              // largeur de l'axe des prix (réduite sur petit écran)
+const PAD_B = 17;
+const isNarrow = () => window.innerWidth<=820;
+const REDUCED = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
 function drawChart(){
   const [w,h] = fitCanvas(cv, ctx);
   CW=w; CH=h;
+  PAD_R = w<520 ? 50 : 66;
   const t = M[ui.sym];
   const cs = candles(t, ui.tf);
   ctx.clearRect(0,0,w,h);
@@ -919,8 +1082,11 @@ function drawChart(){
   const mas = {};
   [9,21,50].forEach(p=>{ if(ui.ma[p]){ mas[p]=sma(cs,p,'c').slice(start,end); } });
   for(const p in mas) mas[p].forEach(v=>{ if(v!=null){ if(v<lo)lo=v; if(v>hi)hi=v; } });
+  // on n'élargit l'échelle pour une alerte que si elle est proche de la fourchette
+  // visible : sinon un niveau lointain écrase les chandelles en bas du graphique
+  const rng0 = hi-lo || 1;
   alerts.filter(a=>a.sym===ui.sym && !a.fired).forEach(a=>{
-    if(a.lvl < hi*1.09 && a.lvl > lo*0.91){ lo=Math.min(lo,a.lvl); hi=Math.max(hi,a.lvl); }
+    if(a.lvl < hi+rng0*0.3 && a.lvl > lo-rng0*0.3){ lo=Math.min(lo,a.lvl); hi=Math.max(hi,a.lvl); }
   });
   const pd = (hi-lo)*0.09 || 1;
   lo -= pd; hi += pd;
@@ -968,7 +1134,7 @@ function drawChart(){
     ctx.strokeStyle=C.bd; ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(0,vy0+.5); ctx.lineTo(plotW,vy0+.5); ctx.stroke();
     ctx.fillStyle=C.tx3; ctx.textAlign='left'; ctx.textBaseline='top';
-    ctx.fillText('VOL '+kq(Math.round(vmax)), plotW+7, vy0+2);
+    ctx.fillText((PAD_R<60?'':'VOL ')+kq(Math.round(vmax)), plotW+6, vy0+2);
   }
 
   // ── chandelles ──
@@ -1197,20 +1363,26 @@ function renderWatch(){
       r.px.classList.add(cl);
       r.tFlash=now; r.lastPx=t.px;
     } else if(r.lastPx==null) r.lastPx=t.px;
-    drawSpark(r.cv, t.spark, t.spark[t.spark.length-1]>=t.spark[0]);
+    // sparkline intraday : 60 clôtures 1 min + le prix courant, colorée comme
+    // la variation du jour affichée juste à côté
+    const sp = t.c1.slice(-60).map(c=>c.c);
+    sp[sp.length-1] = t.px;
+    drawSpark(r.cv, sp, ch>=0);
   });
 }
 function renderBook(){
   const t=M[ui.sym];
   $('bkSym').textContent=ui.sym;
-  const maxQ=Math.max(...t.asks.map(l=>l.q), ...t.bids.map(l=>l.q));
-  const rows=(arr,cls,rev)=>{
-    const a = rev? arr.slice().reverse() : arr;
-    return a.map(l=>`<tr class="${cls}"><td class="p"><i class="dep" style="width:${(l.q/maxQ*100).toFixed(1)}%"></i><span>${f2(l.p)}</span></td>`+
-      `<td class="q"><span>${kq(l.q)}</span></td><td class="c"><span>${kq(l.c)}</span></td></tr>`).join('');
-  };
-  $('askBody').innerHTML = rows(t.asks,'ask',true);
-  $('bidBody').innerHTML = rows(t.bids,'bid',false);
+  // moins de niveaux sur écran étroit pour éviter un carnet qui déborde
+  const N = isNarrow() ? 8 : 11;
+  const asks = t.asks.slice(0,N), bids = t.bids.slice(0,N);
+  const maxQ = Math.max(...asks.map(l=>l.q), ...bids.map(l=>l.q));
+  const rows=(arr,cls,rev)=>(rev? arr.slice().reverse() : arr).map(l=>
+    `<div class="bkr ${cls}"><i class="dep" style="width:${(l.q/maxQ*100).toFixed(1)}%"></i>`+
+    `<span class="p">${f2(l.p)}</span><span class="q">${kq(l.q)}</span>`+
+    `<span class="c">${kq(l.c)}</span></div>`).join('');
+  $('askBody').innerHTML = rows(asks,'ask',true);
+  $('bidBody').innerHTML = rows(bids,'bid',false);
   const bb=bestBid(t), ba=bestAsk(t);
   $('bkMid').textContent=f2((bb+ba)/2);
   $('bkSpread').textContent=(ba-bb).toFixed(t.tick<0.02?2:2)+' ('+((ba-bb)/((bb+ba)/2)*1e4).toFixed(1)+' pb)';
@@ -1340,9 +1512,10 @@ function renderHeader(){
   $('ohlc').innerHTML=
     `<span>O <b class="${upc?'up':'dn'}">${f2(c.o)}</b></span><span>H <b>${f2(c.h)}</b></span>`+
     `<span>B <b>${f2(c.l)}</b></span><span>C <b class="${upc?'up':'dn'}">${f2(c.c)}</b></span>`+
-    `<span>VOL <b>${kq(c.v)}</b></span><span>PH/PB J <b>${f2(curStats.hi)}</b>/<b>${f2(curStats.lo)}</b></span>`+
-    `<span>VWAP <b class="${t.px>=curStats.vwap?'up':'dn'}">${f2(curStats.vwap)}</b></span>`+
-    `<span>RÉGIME <b style="color:${t.rMult>1.3?'var(--acc)':'var(--tx2)'}">${t.regime.toUpperCase()}</b></span>`;
+    `<span>VOL <b>${kq(c.v)}</b></span>`+
+    `<span class="x2">PH/PB J <b>${f2(curStats.hi)}</b>/<b>${f2(curStats.lo)}</b></span>`+
+    `<span class="x2">VWAP <b class="${t.px>=curStats.vwap?'up':'dn'}">${f2(curStats.vwap)}</b></span>`+
+    `<span class="x2">RÉGIME <b style="color:${t.rMult>1.3?'var(--acc)':'var(--tx2)'}">${t.regime.toUpperCase()}</b></span>`;
   // équité
   $('eqV').textContent=money(eq);
   $('eqV').className='v '+(eq>=CASH0?'up':'dn');
@@ -1353,8 +1526,22 @@ function renderHeader(){
 /* ═══════════════════════════════════════════════════════════════════
    INTERACTIONS
    ═══════════════════════════════════════════════════════════════════ */
+/* ── navigation par onglets (mobile) ─────────────────────────────── */
+function setView(v){
+  $('app').dataset.view=v;
+  document.querySelectorAll('#tabs button').forEach(x=>
+    x.setAttribute('aria-selected', String(x.dataset.view===v)));
+  if(v==='pos') drawEquity();
+}
+$('tabs').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-view]');
+  if(b) setView(b.dataset.view);
+});
+
 function setSym(s){
   if(!M[s]) return;
+  // sur mobile, choisir un instrument amène naturellement à son graphique
+  if(isNarrow() && $('app').dataset.view!=='graph' && s!==ui.sym) setView('graph');
   ui.sym=s; ui.offset=0;
   $('alSym').value=s;
   curStats=sessionStats(M[s]);
@@ -1396,10 +1583,14 @@ $('posBody').onclick=e=>{
 // réticule
 const cwrap=$('cwrap');
 cwrap.addEventListener('mousemove',e=>{
+  if(touching) return;
+  lastInput='souris';
   const r=cwrap.getBoundingClientRect();
   ui.mx=e.clientX-r.left; ui.my=e.clientY-r.top;
 });
-cwrap.addEventListener('mouseleave',()=>{ ui.mx=ui.my=null; });
+// après un appui tactile, le navigateur synthétise un mouseleave : il ne doit pas
+// effacer le réticule que l'utilisateur vient de poser au doigt
+cwrap.addEventListener('mouseleave',()=>{ if(lastInput==='souris') ui.mx=ui.my=null; });
 cwrap.addEventListener('wheel',e=>{
   e.preventDefault();
   ui.bars = clamp(Math.round(ui.bars*(e.deltaY>0?1.12:0.89)), 24, 460);
@@ -1414,9 +1605,48 @@ cwrap.addEventListener('contextmenu',e=>{
   if(y>priceH) return;
   addAlert(ui.sym, +(lo+(priceH-y)/priceH*(hi-lo)).toFixed(2));
 });
+// boutons zoom / défilement (indispensables sans molette)
+$('zIn').onclick  = ()=>{ ui.bars=clamp(Math.round(ui.bars*0.7),24,460); };
+$('zOut').onclick = ()=>{ ui.bars=clamp(Math.round(ui.bars*1.4),24,460); };
+$('panL').onclick = ()=>{ ui.offset=clamp(ui.offset+Math.round(ui.bars*0.35),0,4000); };
+$('panR').onclick = ()=>{ ui.offset=clamp(ui.offset-Math.round(ui.bars*0.35),0,4000); };
+
+/* ── gestes tactiles : 1 doigt = réticule, 2 doigts = zoom + défilement ── */
+let touching=false, pinch=null, lastInput='souris';
+const tDist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,
+                          e.touches[0].clientY-e.touches[1].clientY);
+const tMid =e=>(e.touches[0].clientX+e.touches[1].clientX)/2;
+cwrap.addEventListener('touchstart',e=>{
+  touching=true; lastInput='tactile';
+  const r=cwrap.getBoundingClientRect();
+  if(e.touches.length===1){
+    pinch=null;
+    ui.mx=e.touches[0].clientX-r.left; ui.my=e.touches[0].clientY-r.top;
+  } else if(e.touches.length===2){
+    ui.mx=ui.my=null;
+    pinch={d:tDist(e), bars:ui.bars, mid:tMid(e), off:ui.offset};
+  }
+},{passive:true});
+cwrap.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  const r=cwrap.getBoundingClientRect();
+  if(e.touches.length===1 && !pinch){
+    ui.mx=e.touches[0].clientX-r.left; ui.my=e.touches[0].clientY-r.top;
+  } else if(e.touches.length===2 && pinch){
+    const d=tDist(e);
+    if(d>4) ui.bars=clamp(Math.round(pinch.bars*pinch.d/d),24,460);
+    const bw=(cwrap.clientWidth-PAD_R)/ui.bars;
+    ui.offset=clamp(pinch.off+(tMid(e)-pinch.mid)/bw,0,4000);
+  }
+},{passive:false});
+cwrap.addEventListener('touchend',e=>{
+  if(e.touches.length<2) pinch=null;
+  if(e.touches.length===0) setTimeout(()=>touching=false,350);
+},{passive:true});
+
 // glisser pour se déplacer dans l'historique
 let drag=null;
-cwrap.addEventListener('mousedown',e=>{ if(e.button===0) drag={x:e.clientX,o:ui.offset}; });
+cwrap.addEventListener('mousedown',e=>{ if(e.button===0 && !touching) drag={x:e.clientX,o:ui.offset}; });
 window.addEventListener('mouseup',()=>drag=null);
 window.addEventListener('mousemove',e=>{
   if(!drag) return;
@@ -1452,8 +1682,8 @@ window.addEventListener('keydown',e=>{
 /* ═══════════════════════════════════════════════════════════════════
    BOUCLE PRINCIPALE
    ═══════════════════════════════════════════════════════════════════ */
-let last=performance.now(), accT=0, accSlow=0, accSpark=0, accEq=0, accNews=0;
-let nextNewsIn=rnd(1500,4000), hbT=0;
+let last=performance.now(), accT=0, accSlow=0, accEq=0, accNews=0, accDraw=0;
+let nextNewsIn=rnd(1500,4000), hbT=0, nSwap=0;
 const TICK_MS=80;
 
 function loop(now){
@@ -1474,7 +1704,7 @@ function loop(now){
 
   // rafraîchissement DOM ~11 Hz
   accSlow+=dt;
-  if(accSlow>=90){
+  if(accSlow >= (isNarrow()?130:90)){
     accSlow=0;
     curStats=sessionStats(M[ui.sym]);
     renderWatch(); renderBook(); renderTape(); renderPos(); renderStats(); renderHeader();
@@ -1485,11 +1715,6 @@ function loop(now){
       $('hbRate').textContent=msgRate.toLocaleString('fr-FR')+' msg/s';
       $('lat').textContent='lat '+ri(8,17)+' ms';
     }
-  }
-  // sparklines
-  accSpark+=dt;
-  if(accSpark>=380){ accSpark=0;
-    UNIV.forEach(u=>{ const t=M[u.sym]; t.spark.push(t.px); if(t.spark.length>64) t.spark.shift(); });
   }
   // courbe d'équité
   accEq+=dt;
@@ -1504,10 +1729,19 @@ function loop(now){
   // fil de presse
   accNews+=dt;
   if(accNews>=nextNewsIn){ accNews=0; nextNewsIn=rnd(5500,13000); pushNews(); }
-  nX -= dt*0.052;
+  if(REDUCED){
+    // pas de défilement continu : on avance d'un titre toutes les 7 s
+    if(now-nSwap>7000 && nTrack.children.length>1){
+      nSwap=now;
+      nW -= nTrack.firstChild.offsetWidth;
+      nTrack.removeChild(nTrack.firstChild);
+    }
+  } else nX -= dt*0.052;
   feedNews();
 
-  drawChart();
+  // sur petit écran, on limite le rendu du graphique à ~30 im/s (batterie)
+  accDraw+=dt;
+  if(!isNarrow() || accDraw>=32){ accDraw=0; drawChart(); }
   requestAnimationFrame(loop);
 }
 
@@ -1516,6 +1750,8 @@ initUniverse();
 buildWatch();
 renderAlerts();
 renderPos();
+setView('graph');
+if(isNarrow()) ui.bars=64;                  // moins de chandelles sur écran étroit
 setSym('NOVX');
 // quelques alertes et titres de départ pour que l'écran soit vivant
 addAlert('NOVX', +(M.NOVX.px*1.014).toFixed(2));
@@ -1525,6 +1761,8 @@ for(let i=0;i<8;i++) pushNews();
 eqCurve.push({m:simMin,e:CASH0});
 drawEquity();
 toast('SESSION OUVERTE',`Compte simulé <b>${money(CASH0)}</b> · 6 instruments · flux fictif`);
+if(isNarrow()) toast('MODE MOBILE',
+  'Onglets en haut · 1 doigt = réticule · 2 doigts = zoom et défilement · achat/vente en bas');
 window.addEventListener('resize',()=>{ drawEquity(); });
 requestAnimationFrame(loop);
 </script>
