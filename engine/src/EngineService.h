@@ -10,8 +10,10 @@
 #include <string>
 
 #include "AudioBackend.h"
+#include "AudioFileCache.h"
 #include "PluginHost.h"
 #include "RpcServer.h"
+#include "musio/ClipPlayer.h"
 #include "musio/CoreEngine.h"
 #include "musio/MeterRing.h"
 #include "musio/Models.h"
@@ -51,13 +53,34 @@ class EngineService {
   bool renderToFile(const std::string& path, SampleCount numSamples, double sampleRate,
                     int blockSize, std::string& error);
 
+  /// Outcome of the last clip-scene build, surfaced over RPC so the UI can show
+  /// which files failed to load rather than just playing silence.
+  struct ClipLoadReport {
+    int clipsPlaced = 0;
+    int filesLoaded = 0;
+    int filesMissing = 0;
+    int filesResampled = 0;
+    std::size_t audioBytes = 0;
+    bool budgetExceeded = false;
+    std::vector<std::string> problems;
+  };
+
+  /// Decode every audio clip in the project and publish a new scene. Control
+  /// thread only; blocking file I/O happens here, never in the audio callback.
+  const ClipLoadReport& rebuildClipScene(double targetSampleRate);
+
+  const ClipLoadReport& clipReport() const { return clipReport_; }
+
  private:
   static Json fail(const std::string& message);
   Json dispatch_projectInfo();
+  Json clipReportToJson() const;
 
   CoreEngine engine_;
   AudioBackend audio_;
   JucePluginHost plugins_;
+  AudioFileCache audioFiles_;
+  ClipLoadReport clipReport_;
   MeterWriter meters_;
   RpcServer rpc_;
   Project project_;

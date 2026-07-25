@@ -27,6 +27,18 @@ export interface TrackInfo {
   instrument?: { name: string; vendor: string; type: string; uid: string };
 }
 
+/// Outcome of the engine's last clip decode pass. Surfaced so a missing audio
+/// file reads as an error rather than as unexplained silence.
+export interface ClipReport {
+  clipsPlaced: number;
+  filesLoaded: number;
+  filesMissing: number;
+  filesResampled: number;
+  audioBytes: number;
+  budgetExceeded: boolean;
+  problems: string[];
+}
+
 export interface ProjectInfo {
   id: string;
   name: string;
@@ -42,6 +54,7 @@ export interface ProjectInfo {
   tracks: TrackInfo[];
   masterVolume?: number;
   fromNewerFormatVersion?: boolean;
+  clips: ClipReport;
 }
 
 export interface EngineStatus {

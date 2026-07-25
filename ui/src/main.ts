@@ -471,6 +471,28 @@ async function refreshProject(): Promise<void> {
       `<div class="kv"><span class="k">warning</span><span class="v bad">newer format</span></div>`,
     );
   }
+
+  const clips = project.clips;
+  if (clips !== undefined) {
+    const mib = (clips.audioBytes / (1024 * 1024)).toFixed(1);
+    info.push(
+      `<div class="kv"><span class="k">audio clips</span><span class="v">${clips.clipsPlaced}</span></div>`,
+      `<div class="kv"><span class="k">decoded</span><span class="v">${clips.filesLoaded} file${clips.filesLoaded === 1 ? "" : "s"}, ${mib} MiB</span></div>`,
+    );
+    if (clips.filesResampled > 0) {
+      info.push(
+        `<div class="kv"><span class="k">resampled</span><span class="v">${clips.filesResampled}</span></div>`,
+      );
+    }
+    // A missing file must never present as silence with no explanation.
+    if (clips.filesMissing > 0 || clips.budgetExceeded) {
+      info.push(
+        `<div class="kv"><span class="k">missing</span><span class="v bad">${clips.filesMissing}</span></div>`,
+      );
+      say(clips.problems[0] ?? "some clip audio could not be loaded", "error");
+    }
+  }
+
   $("project-info").innerHTML = info.join("");
 
   $<HTMLInputElement>("project-path").value = project.path;

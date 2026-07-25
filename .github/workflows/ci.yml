@@ -113,10 +113,20 @@ jobs:
           print(f"ok: {len(onsets)} clicks on the beat grid, peak={max(env):.3f}")
           PY
 
+      # Verifies audio clip playback numerically through the whole stack:
+      # decode -> SampleBuffer -> ClipScene -> CoreEngine::process -> WAV.
+      - name: Audio clip end-to-end test
+        run: |
+          python3 scripts/e2e-clips.py \
+            build/engine/musio-engine_artefacts/RelWithDebInfo/musio-engine \
+            /tmp/musio-e2e
+
       - uses: actions/upload-artifact@v4
         with:
           name: render-smoke-test
-          path: /tmp/ci.wav
+          path: |
+            /tmp/ci.wav
+            /tmp/musio-e2e/out.wav
           if-no-files-found: error
 
   ui:

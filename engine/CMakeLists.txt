@@ -19,6 +19,7 @@ juce_add_console_app(musio-engine
 target_sources(musio-engine PRIVATE
   src/main.cpp
   src/AudioBackend.cpp
+  src/AudioFileCache.cpp
   src/PluginHost.cpp
   src/RpcServer.cpp
   src/EngineService.cpp

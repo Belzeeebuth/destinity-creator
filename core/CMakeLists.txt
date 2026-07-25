@@ -1,6 +1,7 @@
 add_library(musio-core STATIC
   src/Transport.cpp
   src/Metronome.cpp
+  src/ClipPlayer.cpp
   src/CoreEngine.cpp
   src/MeterRing.cpp
   src/Models.cpp

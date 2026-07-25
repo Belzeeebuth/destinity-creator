@@ -65,6 +65,13 @@ $E --serve                               # open a device and serve JSON-RPC
 sound server. It drives the same `CoreEngine::process()` the device callback
 drives, so the offline result and the live result cannot drift apart.
 
+Clip playback is verified numerically through the whole stack — decode,
+placement, looping, fades, mute, gain and pan — by:
+
+```bash
+python3 scripts/e2e-clips.py $E
+```
+
 Then the UI, in a second terminal:
 
 ```bash
@@ -85,10 +92,12 @@ Honest state of each piece:
 | `.musio` project read/write | **Done** | Lossless round-trip, matches Swift's encoding |
 | Offline WAV render | **Done** | |
 | JSON-RPC control surface | **Done** | Unix socket, newline-delimited JSON |
+| Audio clip playback | **Done (memory-resident)** | Placement, source offsets, looping, 4 fade curves; verified sample-exact end to end |
+| Audio file decode + resample | **Done** | WAV/AIFF/FLAC/Ogg via JUCE, resampled once on load |
 | JACK / ALSA output | **Compiles, untested live** | No audio server in the dev container |
 | VST3 / LV2 hosting | **Compiles, untested live** | No plugins installed in the dev container |
 | Web UI | **Type-checks, not yet run** | Needs `libwebkit2gtk-4.1-dev` to build |
-| Audio clip playback | **Not started** | Interface defined; needs file decode + streaming |
+| Streaming clips from disk | **Not started** | v1 preloads; 1 GiB budget, then refuses |
 | MIDI input (ALSA seq) | **Not started** | |
 | Plugin editor windows | **Not started** | Needs X11 embedding |
 | CLAP hosting | **Not started** | Headers vendored; JUCE cannot host CLAP |

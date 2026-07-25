@@ -1,8 +1,10 @@
 #include "musio/CoreEngine.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
+#include <thread>
 
 #include "musio/Models.h"
 
@@ -178,6 +180,37 @@ bool CoreEngine::postScheduledMidi(const ScheduledMidiEvent& event) {
            static_cast<std::uint32_t>(event.data2);
   c.u32c = event.channel;
   return post(c);
+}
+
+void CoreEngine::publishClipScene(ClipScenePtr scene) {
+  // Drop a scene retired by an earlier publish, if it is now safe.
+  collectRetiredScene();
+
+  // If a previous scene is still awaiting retirement we cannot queue a second
+  // one, so wait it out here -- on the control thread, where blocking is fine.
+  if (retiredScene_ != nullptr) {
+    const std::uint64_t target = retireAfterCallback_;
+    for (int spin = 0; spin < 1000 && callbackCount_.load(std::memory_order_acquire) < target;
+         ++spin) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    retiredScene_.reset();
+  }
+
+  retiredScene_ = std::move(liveScene_);
+  liveScene_ = std::move(scene);
+  scene_.store(liveScene_.get(), std::memory_order_release);
+
+  // Two callbacks is the fence: one may have been mid-flight when we stored, the
+  // next is guaranteed to have loaded the new pointer.
+  retireAfterCallback_ = callbackCount_.load(std::memory_order_acquire) + 2;
+}
+
+void CoreEngine::collectRetiredScene() {
+  if (retiredScene_ == nullptr) return;
+  if (callbackCount_.load(std::memory_order_acquire) >= retireAfterCallback_) {
+    retiredScene_.reset();
+  }
 }
 
 void CoreEngine::setTrackInstrument(TrackSlot slot, IPluginInstance* instance) {
@@ -429,6 +462,13 @@ void CoreEngine::renderSegment(float* const* out, int numChannels, int outOffset
     std::memset(left + outOffset, 0, static_cast<std::size_t>(n) * sizeof(float));
     std::memset(right + outOffset, 0, static_cast<std::size_t>(n) * sizeof(float));
 
+    // Audio clips first: they and the instrument share the track bus, so a track
+    // can carry both recorded audio and a synth without extra routing.
+    if (blockScene_ != nullptr) {
+      renderClipsForTrack(*blockScene_, static_cast<TrackSlot>(i), segment,
+                          left, right, outOffset);
+    }
+
     // Instrument: turns this track's MIDI window into audio.
     if (t.instrument != nullptr) {
       float* channels[2] = {left + outOffset, right + outOffset};
@@ -492,6 +532,10 @@ void CoreEngine::process(float* const* out, int numChannels, int numSamples) noe
   }
 
   drainCommands();
+
+  // Load the clip scene exactly once per block. Doing it per track or per segment
+  // would let a mid-block swap render half a block from each scene.
+  blockScene_ = scene_.load(std::memory_order_acquire);
 
   // Clear the master and click busses for this block.
   std::memset(masterBuffer(0), 0, static_cast<std::size_t>(numSamples) * sizeof(float));

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <map>
 #include <vector>
 
 #include "musio/Persistence.h"
@@ -79,6 +80,115 @@ void EngineService::stop() {
   meters_.close();
 }
 
+const EngineService::ClipLoadReport& EngineService::rebuildClipScene(double targetSampleRate) {
+  clipReport_ = ClipLoadReport{};
+
+  if (targetSampleRate <= 0.0) targetSampleRate = project_.sampleRate;
+
+  ClipSceneBuilder builder;
+
+  // One decode per file, however many clips reference it. The fixture project
+  // reuses a single break across clips, and a real project does this constantly.
+  std::map<std::string, const SampleBuffer*> byPath;
+
+  for (const auto& track : project_.tracks) {
+    if (track.slot == kInvalidSlot) continue;
+
+    for (const auto& clip : track.clips) {
+      if (clip.kind != ClipContentKind::Audio) continue;
+
+      const auto& reference = clip.audio.fileReference;
+      const std::string resolved = resolveAudioFilePath(
+          projectPath_, reference.relativePath, reference.originalPath);
+
+      if (resolved.empty()) {
+        ++clipReport_.filesMissing;
+        clipReport_.problems.push_back(
+            "missing audio for clip '" + clip.name + "': tried '" +
+            reference.relativePath + "' and '" + reference.originalPath + "'");
+        continue;
+      }
+
+      const SampleBuffer* buffer = nullptr;
+      const auto cached = byPath.find(resolved);
+
+      if (cached != byPath.end()) {
+        buffer = cached->second;
+      } else {
+        std::string error;
+        AudioFileCache::LoadInfo info;
+        SampleBufferPtr decoded =
+            audioFiles_.load(resolved, targetSampleRate, error, &info);
+
+        if (decoded == nullptr) {
+          ++clipReport_.filesMissing;
+          clipReport_.problems.push_back("clip '" + clip.name + "': " + error);
+          byPath.emplace(resolved, nullptr);
+          continue;
+        }
+
+        if (info.resampled) ++clipReport_.filesResampled;
+
+        buffer = builder.adopt(std::move(decoded));
+        if (buffer == nullptr) {
+          clipReport_.budgetExceeded = true;
+          clipReport_.problems.push_back(
+              "preload budget exhausted before '" + clip.name + "'");
+          byPath.emplace(resolved, nullptr);
+          continue;
+        }
+
+        ++clipReport_.filesLoaded;
+        byPath.emplace(resolved, buffer);
+      }
+
+      if (buffer == nullptr) continue;  // a previous attempt on this file failed
+
+      ClipRt rt;
+      rt.source = buffer;
+      rt.slot = track.slot;
+      rt.timelineStart = clip.timeRange.start.samples;
+      rt.timelineLength = clip.timeRange.duration.samples;
+      rt.sourceOffset = clip.audio.sourceStartSample;
+      rt.sourceLength = clip.audio.sourceLengthSamples;
+      rt.looped = clip.isLooped;
+      rt.muted = clip.isMuted;
+      rt.gain = 1.0f;  // track volume is applied by the mixer, not per clip
+      rt.fadeInFrames = clip.fadeInDuration;
+      rt.fadeOutFrames = clip.fadeOutDuration;
+      rt.fadeInCurve = fadeCurveFromString(clip.fadeInCurve);
+      rt.fadeOutCurve = fadeCurveFromString(clip.fadeOutCurve);
+
+      // A clip whose timeline length is unset falls back to its source length, so
+      // a hand-written project file does not silently produce nothing.
+      if (rt.timelineLength <= 0) {
+        rt.timelineLength = rt.sourceLength > 0 ? rt.sourceLength : buffer->numFrames();
+      }
+
+      builder.addClip(rt);
+      ++clipReport_.clipsPlaced;
+    }
+  }
+
+  clipReport_.audioBytes = builder.audioBytes();
+  if (builder.budgetExceeded()) clipReport_.budgetExceeded = true;
+
+  engine_.publishClipScene(builder.finish());
+  return clipReport_;
+}
+
+Json EngineService::clipReportToJson() const {
+  Json report = Json::object();
+  report["clipsPlaced"] = clipReport_.clipsPlaced;
+  report["filesLoaded"] = clipReport_.filesLoaded;
+  report["filesMissing"] = clipReport_.filesMissing;
+  report["filesResampled"] = clipReport_.filesResampled;
+  report["audioBytes"] = static_cast<std::uint64_t>(clipReport_.audioBytes);
+  report["budgetExceeded"] = clipReport_.budgetExceeded;
+  report["problems"] = clipReport_.problems;
+  return report;
+}
+
 bool EngineService::renderToFile(const std::string& path, SampleCount numSamples,
                                 double sampleRate, int blockSize, std::string& error) {
   blockSize = clamp(blockSize, 32, kMaxBlockSize);
@@ -88,6 +198,9 @@ bool EngineService::renderToFile(const std::string& path, SampleCount numSamples
 
   engine_.prepare(sampleRate, blockSize);
   engine_.applyProject(project_);
+  // Clip audio has to be decoded at the render rate, which may differ from the
+  // rate it was decoded at when the project was loaded.
+  rebuildClipScene(sampleRate);
 
   std::vector<float> left(static_cast<std::size_t>(blockSize), 0.0f);
   std::vector<float> right(static_cast<std::size_t>(blockSize), 0.0f);
@@ -291,6 +404,7 @@ Json EngineService::dispatch(const std::string& method, const Json& params) {
     project_ = Project::makeDefault(stringOr(params, "name", "Untitled"));
     projectPath_.clear();
     engine_.applyProject(project_);
+    rebuildClipScene(audio_.isOpen() ? audio_.currentSampleRate() : project_.sampleRate);
     return dispatch_projectInfo();
   }
 
@@ -305,6 +419,7 @@ Json EngineService::dispatch(const std::string& method, const Json& params) {
     project_ = std::move(loaded);
     projectPath_ = path;
     engine_.applyProject(project_);
+    rebuildClipScene(audio_.isOpen() ? audio_.currentSampleRate() : project_.sampleRate);
 
     Json info = dispatch_projectInfo();
     info["fromNewerFormatVersion"] = result.fromNewerVersion;
@@ -423,6 +538,8 @@ Json EngineService::dispatch_projectInfo() {
   if (project_.masterTrack.has_value()) {
     info["masterVolume"] = project_.masterTrack->volume;
   }
+
+  info["clips"] = clipReportToJson();
 
   return info;
 }

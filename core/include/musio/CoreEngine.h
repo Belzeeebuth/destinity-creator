@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "musio/ClipPlayer.h"
 #include "musio/Command.h"
 #include "musio/MeterRing.h"
 #include "musio/Metronome.h"
@@ -97,6 +98,23 @@ class CoreEngine {
   /// Push a whole project's mixer state and MIDI content. Control thread only.
   void applyProject(Project& project);
 
+  /// Hand the audio thread a new set of audio clips. Control thread only.
+  ///
+  /// The swap itself is a single release store, so the audio thread never sees a
+  /// partially built scene. The previous scene is *not* freed immediately -- a
+  /// callback already in flight may still be reading it -- it is held until two
+  /// further callbacks have been observed, then released on the next publish or
+  /// collectRetiredScene() call. That is why this is lock-free on both sides.
+  void publishClipScene(ClipScenePtr scene);
+
+  /// Release the previous scene if the audio thread has demonstrably moved past
+  /// it. Safe to call periodically from the control thread; a no-op otherwise.
+  void collectRetiredScene();
+
+  const ClipScene* currentClipScene() const noexcept {
+    return scene_.load(std::memory_order_acquire);
+  }
+
   /// Attach a plugin instance to a track. Control thread only, and only while
   /// the transport is stopped -- there is no chain-swap fence yet.
   void setTrackInstrument(TrackSlot slot, IPluginInstance* instance);
@@ -159,6 +177,15 @@ class CoreEngine {
   // Fixed-capacity, ascending-order MIDI schedule.
   std::vector<ScheduledMidiEvent> scheduled_;
   int numScheduledEvents_ = 0;
+
+  // Audio clips. `scene_` is what the audio thread reads; the two unique_ptrs are
+  // control-thread ownership, including the deferred-release slot.
+  std::atomic<const ClipScene*> scene_{nullptr};
+  ClipScenePtr liveScene_;
+  ClipScenePtr retiredScene_;
+  std::uint64_t retireAfterCallback_ = 0;
+  /// Scene pointer pinned for the duration of one process() call.
+  const ClipScene* blockScene_ = nullptr;
 
   SpscQueue<Command> commands_;
   std::atomic<std::uint64_t> droppedCommands_{0};

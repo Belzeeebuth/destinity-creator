@@ -190,22 +190,27 @@ owns the UUID ↔ slot mapping.
 |---|---|---|
 | `musio-core` | nothing but libstdc++, `rt`, `pthread`, nlohmann | **Yes, entirely** |
 | `engine/AudioBackend` | JUCE, JACK, ALSA | No |
+| `engine/AudioFileCache` | JUCE audio formats | Via the offline render path |
 | `engine/PluginHost` | JUCE, VST3 SDK | Scan path only |
 | `engine/RpcServer` | POSIX sockets | Yes |
 | `ui` | Tauri, webkit2gtk | Type-check only |
 
-60 tests cover the first row. That is deliberate: the layer that carries the
+83 tests cover the first row. That is deliberate: the layer that carries the
 musical correctness is also the layer with no dependencies, so a CI runner with
-no sound card verifies the part that matters.
+no sound card verifies the part that matters. `ldd` on the core test binary lists
+only `libc`, `libm`, `libstdc++` and `libgcc_s`.
 
 ## Next
 
 In dependency order:
 
-1. **Audio clip playback** — a streaming reader feeding `AudioClipData` through
-   `CoreEngine`. `AudioFileReference` and the clip model already parse; what is
-   missing is decode plus a disk-read thread with prebuffering. The audio thread
-   must only ever pop from a ring buffer.
+1. **Streaming clips from disk.** v1 is memory-resident: `AudioFileCache` decodes
+   whole files on the control thread and `ClipScene` owns them, with a 1 GiB
+   budget that refuses rather than exhausting memory. That is fine for loops and
+   one-shots and wrong for a 40-minute stem. Streaming slots in behind the same
+   `ClipRt` interface — only where the samples come from changes, not how they are
+   mixed — and needs a disk-read thread with prebuffering plus a flush-on-seek
+   generation counter. The audio thread must only ever pop from a ring buffer.
 2. **Live audio verification** on a real PipeWire/JACK desktop, including an
    xrun-under-load measurement. Everything device-side is currently
    compile-verified only.
@@ -214,3 +219,42 @@ In dependency order:
 4. **Plugin editor windows** — X11 embedding, the fiddliest remaining piece.
 5. **CLAP hosting** against the vendored headers. JUCE cannot host CLAP, so this
    is a direct implementation of `IPluginHost`.
+
+## Audio clips
+
+A `ClipScene` is an immutable snapshot of every audio clip plus ownership of the
+decoded audio it points at. Publishing one is a single release store, so the
+audio thread never observes a half-built scene:
+
+```cpp
+retiredScene_ = std::move(liveScene_);      // keep the old one alive
+liveScene_    = std::move(scene);
+scene_.store(liveScene_.get(), std::memory_order_release);
+retireAfterCallback_ = callbackCount_ + 2;  // fence, not a guess
+```
+
+The previous scene is not freed immediately — a callback already in flight may
+still be reading it. It is held until two further callbacks have been observed:
+one may have been mid-flight when the store landed, the next is guaranteed to
+have loaded the new pointer. `process()` loads the scene pointer exactly once per
+block, because loading per track or per segment would let a mid-block swap render
+half a block from each scene.
+
+`ClipRt` is trivially copyable and resolves everything to absolute sample
+positions up front, so the renderer does no musical arithmetic: clips are sorted
+by start position and the scan stops as soon as one begins at or after the end of
+the block.
+
+The same buffer-size-invariance property the transport and metronome have applies
+here too — `clip.rendered_clip_audio_is_buffer_size_invariant` renders 20k samples
+of a looped, cross-faded clip at 37/64/256/512/1024 frames and compares sample by
+sample. On top of that, `scripts/e2e-clips.py` drives the real binary: it builds a
+probe WAV of distinct DC regions so a rendered sample identifies exactly which
+source frame produced it, then asserts 18 exact values covering placement, source
+offsets, looping, fade curves, mute and the gain/pan chain.
+
+Resampling happens once, on load, in `AudioFileCache` — never on the audio
+thread. Clip file paths resolve relative to the project folder first and the
+absolute import path last, which is what lets a project written on macOS open
+here: its `originalPath` will be a `/Users/...` path that does not exist, but its
+`relativePath` will resolve.
