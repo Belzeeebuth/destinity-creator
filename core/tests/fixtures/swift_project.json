@@ -1,0 +1,270 @@
+{
+  "audioFiles" : [
+    {
+      "bitDepth" : 24,
+      "channelCount" : 2,
+      "fileID" : "9C4E1F2A-7B3D-4E5F-8A9B-0C1D2E3F4A5B",
+      "lengthInSamples" : 480000,
+      "originalPath" : "/Users/mpatti/Music/loops/break.wav",
+      "relativePath" : "Audio Files/break.wav",
+      "sampleRate" : 48000
+    }
+  ],
+  "createdAt" : "2026-02-16T09:14:22Z",
+  "dawState" : {
+    "horizontalScrollOffset" : 0,
+    "openPluginWindows" : [],
+    "showInspector" : true,
+    "showMixer" : false,
+    "showVRack" : false,
+    "verticalScrollOffset" : 0,
+    "zoomLevel" : 1.25
+  },
+  "formatVersion" : 1,
+  "id" : "1A2B3C4D-5E6F-4A7B-8C9D-0E1F2A3B4C5D",
+  "isLoopEnabled" : true,
+  "loopRegion" : {
+    "duration" : {
+      "sampleRate" : 48000,
+      "samples" : 96000
+    },
+    "start" : {
+      "sampleRate" : 48000,
+      "samples" : 48000
+    }
+  },
+  "markers" : [
+    {
+      "beatPosition" : 16,
+      "color" : "orange",
+      "id" : "4D5E6F7A-8B9C-4D0E-9F1A-2B3C4D5E6F70",
+      "name" : "Drop",
+      "type" : "drop"
+    }
+  ],
+  "masterTrack" : {
+    "automationLanes" : [],
+    "clips" : [],
+    "color" : "gray",
+    "height" : 80,
+    "id" : {
+      "rawValue" : "FFEEDDCC-BBAA-4998-8776-554433221100"
+    },
+    "isArmed" : false,
+    "isAutomationVisible" : false,
+    "isExpanded" : true,
+    "isMuted" : false,
+    "isSolo" : false,
+    "name" : "Master",
+    "pan" : 0,
+    "pluginSlots" : [],
+    "type" : "master",
+    "volume" : 1
+  },
+  "metadata" : {
+    "album" : "",
+    "artist" : "mpatti",
+    "comments" : "morning session",
+    "copyright" : "",
+    "genre" : "electronic"
+  },
+  "modifiedAt" : "2026-02-16T11:02:47Z",
+  "name" : "Morning Build",
+  "sampleRate" : 48000,
+  "tempoChanges" : [],
+  "timeSignatureChanges" : [],
+  "tempo" : {
+    "bpm" : 128
+  },
+  "timeSignature" : {
+    "denominator" : 4,
+    "numerator" : 4
+  },
+  "tracks" : [
+    {
+      "automationLanes" : [],
+      "clips" : [
+        {
+          "content" : {
+            "midi" : {
+              "_0" : {
+                "events" : [
+                  {
+                    "beatPosition" : 0,
+                    "channel" : 0,
+                    "id" : "AA0011BB-22CC-433D-9E44-55FF6677889A",
+                    "type" : {
+                      "note" : {
+                        "_0" : {
+                          "duration" : 0.5,
+                          "pitch" : 36,
+                          "velocity" : 110
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "beatPosition" : 1,
+                    "channel" : 0,
+                    "id" : "BB1122CC-33DD-444E-8F55-66008899AABB",
+                    "type" : {
+                      "note" : {
+                        "_0" : {
+                          "duration" : 0.25,
+                          "pitch" : 38,
+                          "velocity" : 96
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "beatPosition" : 2,
+                    "channel" : 0,
+                    "id" : "CC2233DD-44EE-455F-9066-7711AABBCCDD",
+                    "type" : {
+                      "controlChange" : {
+                        "controller" : 74,
+                        "value" : 64
+                      }
+                    }
+                  }
+                ],
+                "originalTempo" : 128
+              }
+            }
+          },
+          "fadeInCurve" : "linear",
+          "fadeInDuration" : 0,
+          "fadeOutCurve" : "sCurve",
+          "fadeOutDuration" : 480,
+          "id" : {
+            "rawValue" : "11223344-5566-4778-899A-ABBCCDDEEFF0"
+          },
+          "isLooped" : false,
+          "isMuted" : false,
+          "isSelected" : false,
+          "name" : "Drums 1",
+          "timeRange" : {
+            "duration" : {
+              "sampleRate" : 48000,
+              "samples" : 90000
+            },
+            "start" : {
+              "sampleRate" : 48000,
+              "samples" : 0
+            }
+          }
+        }
+      ],
+      "color" : "red",
+      "height" : 96,
+      "id" : {
+        "rawValue" : "0F1E2D3C-4B5A-4698-8776-655443332211"
+      },
+      "instrumentSlot" : {
+        "id" : "778899AA-BBCC-4DDE-8FF0-112233445566",
+        "isEnabled" : true,
+        "parameterValues" : {
+          "cutoff" : 0.62,
+          "resonance" : 0.18
+        },
+        "pluginID" : {
+          "manufacturer" : "Native Instruments",
+          "name" : "Massive X",
+          "type" : "audioUnitInstrument",
+          "uniqueID" : "-NIMassiveX-1"
+        }
+      },
+      "isArmed" : true,
+      "isAutomationVisible" : false,
+      "isExpanded" : true,
+      "isMuted" : false,
+      "isSolo" : false,
+      "name" : "Drums",
+      "pan" : -0.25,
+      "pluginSlots" : [
+        {
+          "id" : "99AABBCC-DDEE-4FF0-8112-233445566778",
+          "isEnabled" : true,
+          "parameterValues" : {},
+          "pluginID" : {
+            "manufacturer" : "FabFilter",
+            "name" : "Pro-Q 3",
+            "type" : "vst3Effect",
+            "uniqueID" : "FF-ProQ3-VST3"
+          }
+        }
+      ],
+      "type" : "instrument",
+      "volume" : 0.85
+    },
+    {
+      "automationLanes" : [],
+      "clips" : [
+        {
+          "content" : {
+            "audio" : {
+              "_0" : {
+                "fileReference" : {
+                  "bitDepth" : 24,
+                  "channelCount" : 2,
+                  "fileID" : "9C4E1F2A-7B3D-4E5F-8A9B-0C1D2E3F4A5B",
+                  "lengthInSamples" : 480000,
+                  "originalPath" : "/Users/mpatti/Music/loops/break.wav",
+                  "relativePath" : "Audio Files/break.wav",
+                  "sampleRate" : 48000
+                },
+                "pitchShift" : 0,
+                "preservePitch" : true,
+                "sourceLengthSamples" : 240000,
+                "sourceStartSample" : 1200,
+                "timeStretch" : 1,
+                "warpMarkers" : []
+              }
+            }
+          },
+          "fadeInCurve" : "linear",
+          "fadeInDuration" : 240,
+          "fadeOutCurve" : "linear",
+          "fadeOutDuration" : 240,
+          "id" : {
+            "rawValue" : "22334455-6677-4889-9AAB-BCCDDEEFF001"
+          },
+          "isLooped" : true,
+          "isMuted" : false,
+          "isSelected" : false,
+          "name" : "Break",
+          "timeRange" : {
+            "duration" : {
+              "sampleRate" : 48000,
+              "samples" : 240000
+            },
+            "start" : {
+              "sampleRate" : 48000,
+              "samples" : 96000
+            }
+          }
+        }
+      ],
+      "color" : "blue",
+      "height" : 80,
+      "id" : {
+        "rawValue" : "3C4D5E6F-7A8B-4C9D-8E0F-1A2B3C4D5E6F"
+      },
+      "isArmed" : false,
+      "isAutomationVisible" : false,
+      "isExpanded" : true,
+      "isMuted" : true,
+      "isSolo" : false,
+      "name" : "Break Loop",
+      "pan" : 0.5,
+      "pluginSlots" : [],
+      "type" : "audio",
+      "volume" : 0.7
+    }
+  ],
+  "vRack" : {
+    "instruments" : [],
+    "isEnabled" : false
+  }
+}

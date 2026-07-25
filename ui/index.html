@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Musio</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="transport" role="toolbar" aria-label="Transport">
+        <div class="transport-buttons">
+          <button id="btn-play" class="tb" title="Play (Space)" aria-label="Play">▶</button>
+          <button id="btn-pause" class="tb" title="Pause" aria-label="Pause">❙❙</button>
+          <button id="btn-stop" class="tb" title="Stop (Return)" aria-label="Stop">■</button>
+          <button id="btn-click" class="tb toggle" title="Metronome (K)" aria-pressed="false">
+            Click
+          </button>
+          <button id="btn-loop" class="tb toggle" title="Loop (L)" aria-pressed="false">
+            Loop
+          </button>
+        </div>
+
+        <div class="readout">
+          <div class="readout-block">
+            <span class="readout-label">Position</span>
+            <span id="pos-bars" class="readout-value mono">1.1.000</span>
+          </div>
+          <div class="readout-block">
+            <span class="readout-label">Time</span>
+            <span id="pos-time" class="readout-value mono">0:00.000</span>
+          </div>
+          <div class="readout-block">
+            <span class="readout-label">Tempo</span>
+            <input id="tempo" class="readout-input mono" type="number" min="20" max="999"
+                   step="0.1" value="120" aria-label="Tempo in BPM" />
+          </div>
+          <div class="readout-block">
+            <span class="readout-label">Sig</span>
+            <span class="readout-value mono">
+              <input id="sig-num" type="number" min="1" max="32" value="4" aria-label="Beats per bar" />
+              <span class="sig-slash">/</span>
+              <input id="sig-den" type="number" min="1" max="32" value="4" aria-label="Beat unit" />
+            </span>
+          </div>
+        </div>
+
+        <div class="master">
+          <div class="meter-pair" aria-label="Master output level">
+            <div class="meter"><div id="master-l" class="meter-fill"></div></div>
+            <div class="meter"><div id="master-r" class="meter-fill"></div></div>
+          </div>
+          <input id="master-gain" type="range" min="0" max="1.5" step="0.01" value="1"
+                 aria-label="Master gain" />
+          <span id="master-db" class="mono tiny">+0.0</span>
+        </div>
+      </header>
+
+      <div class="body">
+        <aside class="sidebar">
+          <section class="panel">
+            <h2>Engine</h2>
+            <dl id="status" class="status"></dl>
+            <div class="row">
+              <button id="btn-devices" class="small">Devices</button>
+              <button id="btn-scan" class="small">Scan plugins</button>
+            </div>
+            <div id="devices" class="devices"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Project</h2>
+            <div id="project-info" class="status"></div>
+            <div class="row">
+              <input id="project-path" type="text" placeholder="path/to/project.musio"
+                     aria-label="Project path" />
+            </div>
+            <div class="row">
+              <button id="btn-load" class="small">Load</button>
+              <button id="btn-save" class="small">Save</button>
+              <button id="btn-new" class="small">New</button>
+            </div>
+          </section>
+        </aside>
+
+        <main class="workspace">
+          <div class="timeline-wrap">
+            <canvas id="timeline" class="timeline"></canvas>
+          </div>
+          <div id="tracks" class="tracks"></div>
+        </main>
+      </div>
+
+      <footer id="log" class="log" role="status" aria-live="polite">
+        Connecting to engine…
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
