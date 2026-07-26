@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * Jetons de design.
+ *
+ * Les couleurs de séries sont validées : les trois premiers emplacements
+ * passent tous les gates de séparation daltonienne en clair comme en sombre
+ * (ΔE CVD ≥ 9,2 sur toutes les paires). Le vert d'eau passe sous 3:1 de
+ * contraste sur la surface claire : partout où il porte une information, un
+ * libellé texte ou la vue tableau l'accompagne.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  color-scheme: light;
+
+  --surface: #fcfcfb;
+  --plane: #f9f9f7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --wash: rgba(11, 11, 11, 0.04);
+
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+
+    --surface: #1a1a19;
+    --plane: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --wash: rgba(255, 255, 255, 0.06);
+
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface: #1a1a19;
+  --plane: #0d0d0d;
+  --text-primary: #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --wash: rgba(255, 255, 255, 0.06);
+
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-plane: var(--plane);
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-hairline: var(--border);
+  --color-wash: var(--wash);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--plane);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Les colonnes de chiffres s'alignent ; les grands nombres isolés gardent
+   les chiffres proportionnels (tabular-nums fait paraître « 121 » distendu). */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Icône de la bascule de thème : le symbole montre la destination, pas l'état
+   courant. Décidé en CSS pour éviter tout écart d'hydratation. */
+.theme-icon-light {
+  display: none;
+}
+.theme-icon-dark {
+  display: inline;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .theme-icon-light {
+    display: inline;
+  }
+  :root:where(:not([data-theme="light"])) .theme-icon-dark {
+    display: none;
+  }
+}
+:root[data-theme="dark"] .theme-icon-light {
+  display: inline;
+}
+:root[data-theme="dark"] .theme-icon-dark {
+  display: none;
+}
+:root[data-theme="light"] .theme-icon-light {
+  display: none;
+}
+:root[data-theme="light"] .theme-icon-dark {
+  display: inline;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
