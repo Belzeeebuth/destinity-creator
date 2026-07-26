@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { BENCHMARKS, CATEGORY_LABELS } from '@/data/benchmarks';
+import { CATEGORY_LABELS } from '@/data/benchmarks';
 import type { Score } from '@/data/types';
 import { formatScore } from '@/lib/format';
+import { TRACKED_BENCHMARKS } from '@/lib/leaderboard';
 
 const ROW_HEIGHT = 34;
 // Le SVG est mis à l'échelle à l'affichage : 16 dans le viewBox rend ~22px,
@@ -38,7 +39,7 @@ export function BenchmarkBars({
 }) {
   const [hovered, setHovered] = useState<string | null>(null);
 
-  const rows = BENCHMARKS.map((benchmark) => ({
+  const rows = TRACKED_BENCHMARKS.map((benchmark) => ({
     benchmark,
     score: scores[benchmark.id],
   }));

@@ -4,9 +4,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { QualityCostScatter } from './quality-cost-scatter';
 import { StatTile } from './stat-tile';
-import { BENCHMARKS } from '@/data/benchmarks';
 import { PROVIDER_LIST } from '@/data/models';
 import type { LeaderboardRow, ProviderId } from '@/data/types';
+import { TRACKED_BENCHMARKS } from '@/lib/leaderboard';
 import { formatPrice, formatScore, formatTokens, NA } from '@/lib/format';
 
 type SortKey = 'quality' | 'cost' | 'input' | 'output' | 'context' | 'name';
@@ -239,7 +239,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
             </thead>
             <tbody>
               {sorted.map((row) => {
-                const covered = BENCHMARKS.filter((b) => row.scores[b.id]).length;
+                const covered = TRACKED_BENCHMARKS.filter((b) => row.scores[b.id]).length;
                 return (
                   <tr
                     key={row.model.slug}
@@ -280,7 +280,7 @@ export function LeaderboardView({ rows }: { rows: LeaderboardRow[] }) {
                       {formatTokens(row.model.contextWindow)}
                     </td>
                     <td className="tnum px-3 py-2.5 text-right text-ink-muted">
-                      {covered}/{BENCHMARKS.length}
+                      {covered}/{TRACKED_BENCHMARKS.length}
                     </td>
                   </tr>
                 );

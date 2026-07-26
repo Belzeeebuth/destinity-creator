@@ -3,10 +3,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BenchmarkBars } from '@/components/benchmark-bars';
 import { StatTile } from '@/components/stat-tile';
-import { BENCHMARKS, getBenchmark } from '@/data/benchmarks';
+import { getBenchmark } from '@/data/benchmarks';
 import { MODELS } from '@/data/models';
 import { SCORES_ARE_ILLUSTRATIVE } from '@/data/scores';
-import { buildLeaderboard } from '@/lib/leaderboard';
+import { buildLeaderboard, TRACKED_BENCHMARKS } from '@/lib/leaderboard';
 import { formatDate, formatPrice, formatScore, formatTokens, hostname, NA } from '@/lib/format';
 
 export function generateStaticParams() {
@@ -193,7 +193,7 @@ export default async function ModelPage({ params }: { params: Promise<{ slug: st
                   </td>
                 </tr>
               ) : null}
-              {BENCHMARKS.map((benchmark) => row.scores[benchmark.id])
+              {TRACKED_BENCHMARKS.map((benchmark) => row.scores[benchmark.id])
                 .filter((score) => score !== undefined)
                 .map((score) => (
                   <tr key={score.benchmarkId} className="border-b border-hairline last:border-0">

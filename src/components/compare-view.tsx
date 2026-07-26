@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BENCHMARKS } from '@/data/benchmarks';
 import type { LeaderboardRow } from '@/data/types';
 import { formatPrice, formatScore, formatTokens } from '@/lib/format';
+import { TRACKED_BENCHMARKS } from '@/lib/leaderboard';
 
 /**
  * Trois modèles au maximum : c'est la limite au-delà de laquelle les couleurs
@@ -65,7 +65,7 @@ export function CompareView({
   const viewWidth = 760;
   const plotX = LABEL_WIDTH;
   const plotWidth = viewWidth - LABEL_WIDTH - VALUE_WIDTH;
-  const viewHeight = BENCHMARKS.length * rowHeight + 28;
+  const viewHeight = TRACKED_BENCHMARKS.length * rowHeight + 28;
   const ticks = [0, 25, 50, 75, 100];
   const toX = (value: number) => plotX + (value / 100) * plotWidth;
 
@@ -165,13 +165,13 @@ export function CompareView({
                   x1={toX(tick)}
                   x2={toX(tick)}
                   y1={0}
-                  y2={BENCHMARKS.length * rowHeight}
+                  y2={TRACKED_BENCHMARKS.length * rowHeight}
                   stroke={tick === 0 ? 'var(--axis)' : 'var(--grid)'}
                   strokeWidth={1}
                 />
               ))}
 
-              {BENCHMARKS.map((benchmark, rowIndex) => {
+              {TRACKED_BENCHMARKS.map((benchmark, rowIndex) => {
                 const top = rowIndex * rowHeight + ROW_PADDING / 2;
                 const values = chosen.map((row) => row.scores[benchmark.id]?.value ?? null);
                 const bestValue = Math.max(
@@ -257,7 +257,7 @@ export function CompareView({
                 <text
                   key={`t-${tick}`}
                   x={toX(tick)}
-                  y={BENCHMARKS.length * rowHeight + 18}
+                  y={TRACKED_BENCHMARKS.length * rowHeight + 18}
                   textAnchor="middle"
                   fontSize={11}
                   className="tnum"
@@ -340,7 +340,7 @@ export function CompareView({
                     label="Poids ouverts"
                     values={chosen.map((r) => (r.model.capabilities.openWeights ? 'oui' : 'non'))}
                   />
-                  {BENCHMARKS.map((benchmark) => (
+                  {TRACKED_BENCHMARKS.map((benchmark) => (
                     <SpecRow
                       key={benchmark.id}
                       label={benchmark.name}

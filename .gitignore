@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# traces de run du harness (volumineuses, spécifiques à la machine)
+/bench/runs/

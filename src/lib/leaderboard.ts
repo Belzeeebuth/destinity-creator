@@ -51,9 +51,21 @@ export function compositeQuality(scores: Record<string, Score | undefined>): num
   return weighted / totalWeight;
 }
 
-/** Nombre de benchmarks renseignés sur le total suivi. */
+/**
+ * Benchmarks pour lesquels au moins un modèle a un score.
+ *
+ * Le catalogue liste aussi des benchmarks publics que nous n'exécutons pas : les
+ * afficher comme des colonnes vides gonflerait artificiellement le dénominateur
+ * de couverture. Cette liste s'ajuste d'elle-même le jour où des chiffres
+ * publiés y sont renseignés.
+ */
+export const TRACKED_BENCHMARKS = BENCHMARKS.filter((benchmark) =>
+  SCORES.some((score) => score.benchmarkId === benchmark.id),
+);
+
+/** Nombre de benchmarks renseignés pour ce modèle, sur les benchmarks suivis. */
 export function coverage(scores: Record<string, Score | undefined>): number {
-  return BENCHMARKS.filter((b) => scores[b.id]).length;
+  return TRACKED_BENCHMARKS.filter((b) => scores[b.id]).length;
 }
 
 /**

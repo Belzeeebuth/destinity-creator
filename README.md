@@ -21,7 +21,8 @@ npm run lint
 | Donnée | Statut | Où |
 |---|---|---|
 | Tarifs entrée/sortie, fenêtre de contexte, capacités, identifiants d'API | **Relevés auprès des fournisseurs**, datés modèle par modèle, sources citées sur chaque fiche | `src/data/models.ts` |
-| Scores de benchmark | ⚠️ **Valeurs de démonstration** — aucune mesure derrière | `src/data/scores.ts` |
+| Scores des suites internes | Mesurés par le harness du dépôt, traces conservées — **valeurs de démonstration tant qu'aucun run n'a été exporté** | `src/data/scores.ts` |
+| Scores des benchmarks publics | Volontairement vides : nous ne les exécutons pas | `src/data/benchmarks.ts` |
 
 Tant que le drapeau `SCORES_ARE_ILLUSTRATIVE` vaut `true`, un bandeau le dit à chaque
 visiteur sur chaque page. **Ne publiez pas le site en l'état sans remplacer les scores.**
@@ -31,15 +32,28 @@ Quand une valeur n'a pas pu être vérifiée, elle vaut `null` dans les données
 
 ## Passer en données réelles
 
-Tout se joue dans `src/data/scores.ts` :
+Le dépôt contient son propre harness d'évaluation (`bench/`). Il lance les suites sur les
+modèles, note les réponses, conserve la trace de chaque appel et réécrit `scores.ts` :
 
-1. remplacer la table `RAW_SCORES` (`modelSlug → benchmarkId → score sur 0–100`) ;
-2. passer `provenance` à `'measured'` (mesure maison) ou `'published'` (chiffre du
-   fournisseur, avec `source`) dans `buildScores` ;
-3. basculer `SCORES_ARE_ILLUSTRATIVE` à `false` — le bandeau disparaît tout seul.
+```bash
+npm run bench -- doctor                      # clés, accès aux modèles, bac à sable
+npm run bench -- run --models=… --budget=5   # plafond de dépense vérifié avant chaque appel
+npm run bench -- report                      # tableau de synthèse
+npm run bench -- export                      # réécrit src/data/scores.ts
+```
 
-Aucun autre fichier n'a besoin de changer. Le type `Score` porte déjà `source` et
-`measuredAt` pour rattacher chaque chiffre à sa provenance.
+L'export bascule `SCORES_ARE_ILLUSTRATIVE` à `false`, met `provenance: 'measured'` sur
+chaque score et inscrit le `runId` en en-tête — le bandeau d'avertissement disparaît tout
+seul. Aucun autre fichier ne bouge.
+
+Essai complet sans clé, sans réseau et sans dépense :
+
+```bash
+npm run bench -- run --models=mock-strong,mock-mid,mock-weak --budget=5
+npm run bench -- report
+```
+
+Détail des garde-fous, des suites et des fournisseurs : [`bench/README.md`](bench/README.md).
 
 ## Structure
 
@@ -48,13 +62,21 @@ src/
   data/
     types.ts        Modèle de données (les champs inconnus valent null, jamais 0)
     models.ts       Catalogue : tarifs, contexte, capacités, sources, date de relevé
-    benchmarks.ts   Suites suivies, leur description et leur poids dans l'indice
-    scores.ts       ⚠️ scores — le seul fichier à remplacer pour des données réelles
+    benchmarks.ts   Suites internes + benchmarks publics, avec leurs poids
+    scores.ts       Scores — régénéré par `npm run bench -- export`
   lib/
     leaderboard.ts  Indice composite, coût mixte, frontière de Pareto
     format.ts       Formatage fr-FR ; « n/d » pour tout ce qui est inconnu
   components/       Graphiques SVG maison, tableau triable, filtres
   app/              /  ·  /compare  ·  /benchmarks  ·  /methodologie  ·  /modeles/[slug]
+
+bench/
+  suites/           Les 41 tâches, réparties en 5 suites internes
+  providers/        Adaptateurs Anthropic, OpenAI, Google, Mistral, Ollama + double de test
+  graders/          Notation déterministe + bac à sable Docker pour le code
+  runner.ts         Concurrence, réessais, plafond de dépense, comptabilité des coûts
+  export-scores.ts  Agrégation puis génération de src/data/scores.ts
+  selftest.ts       Verrouille les règles de notation et d'agrégation
 ```
 
 ## Les calculs

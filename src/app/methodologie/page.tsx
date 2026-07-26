@@ -42,15 +42,61 @@ export default function MethodologyPage() {
             {'date de relevé et la source figurent sur chaque fiche.'}
           </p>
           <p className="mt-2 text-sm text-ink-secondary">
-            {'Le remplacement se fait dans un seul fichier : '}
-            <code className="rounded bg-wash px-1.5 py-0.5 font-mono text-ink">src/data/scores.ts</code>
-            {'. Le bandeau d’avertissement disparaît automatiquement quand le drapeau '}
-            <code className="rounded bg-wash px-1.5 py-0.5 font-mono text-ink">SCORES_ARE_ILLUSTRATIVE</code>
-            {' passe à '}
-            <code className="font-mono">false</code>.
+            {'Le harness d’évaluation est en place : trois commandes suffisent à remplacer '}
+            {'cette démonstration par des mesures réelles, avec les traces d’appel conservées. '}
+            {'Voir la section suivante.'}
           </p>
         </section>
       ) : null}
+
+      <section>
+        <h2 className="text-lg font-semibold text-ink">D&apos;où viennent les scores</h2>
+        <p className="mt-2 text-ink-secondary">
+          Le dépôt contient son propre harness d&apos;évaluation. Il lance des suites de
+          tâches sur les modèles, note les réponses et conserve chaque appel — prompt,
+          sortie brute, tokens, latence, coût — dans un fichier de traces. Un score du site
+          est donc rattachable à un run précis, pas à une déclaration.
+        </p>
+        <pre className="mt-4 overflow-x-auto rounded-lg border border-hairline bg-surface p-4 text-sm text-ink">
+          <code>{`npm run bench -- doctor      # clés, accès aux modèles, bac à sable
+npm run bench -- run --models=… --budget=5
+npm run bench -- report      # tableau de synthèse
+npm run bench -- export      # réécrit src/data/scores.ts`}</code>
+        </pre>
+        <p className="mt-3 text-ink-secondary">
+          Le plafond de dépense est vérifié <em>avant</em> chaque appel, avec une estimation
+          pessimiste : le run s&apos;arrête un appel trop tôt plutôt qu&apos;un appel trop
+          tard. Un modèle dont l&apos;identifiant d&apos;API n&apos;est pas vérifié est
+          refusé au lieu d&apos;être deviné, et un run contenant des modèles factices ne peut
+          pas alimenter le site.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold text-ink">
+          Suites internes contre benchmarks publics
+        </h2>
+        <p className="mt-2 text-ink-secondary">
+          Les <strong className="text-ink">suites internes</strong> sont écrites et exécutées
+          ici : raisonnement vérifiable, respect de consigne, extraction structurée, appel
+          d&apos;outils, code Python validé par des tests en conteneur isolé. Leur notation
+          est déterministe — réponse exacte, JSON comparé en profondeur, séquence
+          d&apos;appels, tests qui passent ou non. Pas de juge LLM dans le chemin par défaut,
+          donc pas de biais de juge à corriger.
+        </p>
+        <p className="mt-3 text-ink-secondary">
+          Les <strong className="text-ink">benchmarks publics</strong> (SWE-bench, GPQA,
+          MMLU-Pro…) sont listés pour référence mais restent vides. Nous ne les exécutons
+          pas ; y écrire des chiffres qui ne viennent pas de nous, sans source, serait
+          exactement le travers que ce site cherche à éviter.
+        </p>
+        <p className="mt-3 text-ink-secondary">
+          Le code produit par un modèle n&apos;est jamais exécuté sur la machine hôte. Sans
+          conteneur disponible, les tâches de code sont marquées « ignorées » — et une tâche
+          ignorée sort du dénominateur au lieu de compter comme un échec : personne
+          n&apos;est puni pour une panne d&apos;infrastructure.
+        </p>
+      </section>
 
       <section>
         <h2 className="text-lg font-semibold text-ink">L&apos;indice de qualité</h2>

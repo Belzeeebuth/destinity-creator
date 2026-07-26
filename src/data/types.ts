@@ -33,6 +33,13 @@ export type BenchmarkCategory =
 export interface Benchmark {
   id: string;
   name: string;
+  /**
+   * `internal` : suite écrite et exécutée par notre harness (`bench/suites`),
+   * donc la seule dont on puisse revendiquer les chiffres.
+   * `public` : benchmark tiers, listé pour référence ; ses scores ne peuvent
+   * venir que d'une publication citée, jamais de nous.
+   */
+  kind: 'internal' | 'public';
   category: BenchmarkCategory;
   /** Ce que le benchmark mesure réellement, en une phrase. */
   description: string;
